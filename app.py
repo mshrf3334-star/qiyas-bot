@@ -1,94 +1,55 @@
 import os
 import json
 from flask import Flask, request
-from telegram import Bot, Update, ReplyKeyboardMarkup
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
+from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# قراءة المتغيرات من Render
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-AI_API_KEY = os.environ.get("AI_API_KEY")
-AI_MODEL = os.environ.get("AI_MODEL", "openai/gpt-4o-mini")
-
+# تهيئة البوت
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = Bot(token=TOKEN)
 
-# Flask app
 app = Flask(__name__)
 
-# Dispatcher لتيليجرام
-dispatcher = Dispatcher(bot, None, workers=0)
+# Dispatcher لمعالجة التحديثات
+dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
 
 # تحميل بنك الأسئلة
-with open("data.json", "r", encoding="utf-8") as f:
-    QUESTIONS = json.load(f)
+QUESTIONS_FILE = "data.json"
+if os.path.exists(QUESTIONS_FILE):
+    with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
+        questions = json.load(f)
+else:
+    questions = []
 
-# متغير لتتبع حالة المستخدم
-user_state = {}
+# أوامر البوت
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text("👋 أهلاً بك في بوت قياس! اكتب 'سؤال' لأعطيك سؤال.")
 
-# دالة البدء
-def start(update: Update, context):
-    update.message.reply_text(
-        "👋 أهلاً بك في بوت القدرات.\n"
-        "أرسل أي رسالة للبدء بالأسئلة."
-    )
+def get_question(update: Update, context: CallbackContext):
+    if not questions:
+        update.message.reply_text("❌ لا توجد أسئلة حالياً في البنك.")
+        return
+    import random
+    q = random.choice(questions)
+    question_text = q["question"]
+    choices = "\n".join([f"- {c}" for c in q.get("choices", [])])
+    update.message.reply_text(f"📖 {question_text}\n\n{choices}")
 
-# دالة إرسال سؤال
-def send_question(update: Update, context):
-    chat_id = update.message.chat_id
-    state = user_state.get(chat_id, {"index": 0, "score": 0})
-
-    if state["index"] < len(QUESTIONS):
-        q = QUESTIONS[state["index"]]
-        question_text = f"س{q['id']}: {q['question']}"
-        choices = q["choices"]
-
-        keyboard = [[c] for c in choices]
-        reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-
-        update.message.reply_text(question_text, reply_markup=reply_markup)
-        user_state[chat_id] = state
-    else:
-        score = state["score"]
-        update.message.reply_text(f"✅ انتهيت! درجتك: {score}/{len(QUESTIONS)}")
-        user_state[chat_id] = {"index": 0, "score": 0}
-
-# دالة استلام الإجابات
-def handle_answer(update: Update, context):
-    chat_id = update.message.chat_id
-    state = user_state.get(chat_id, {"index": 0, "score": 0})
-
-    if state["index"] < len(QUESTIONS):
-        q = QUESTIONS[state["index"]]
-        answer = update.message.text.strip()
-
-        if answer == q["answer_index"]:
-            state["score"] += 1
-            update.message.reply_text("👍 إجابة صحيحة!")
-        else:
-            update.message.reply_text(
-                f"❌ خطأ. الإجابة الصحيحة: {q['answer_index']}"
-            )
-
-        state["index"] += 1
-        user_state[chat_id] = state
-        send_question(update, context)
-    else:
-        update.message.reply_text("🔄 أرسل /start للبدء من جديد.")
-
-# ربط الأوامر بالـ Dispatcher
+# ربط الأوامر
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_answer))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, get_question))
 
-# Webhook endpoint
+# Webhook
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
-# للتجربة محلياً
 @app.route("/")
 def home():
-    return "بوت القدرات شغال ✅"
+    return "بوت قياس شغال ✅"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    PORT = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=PORT)
