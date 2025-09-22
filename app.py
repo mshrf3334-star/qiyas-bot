@@ -1,48 +1,45 @@
-# ... أعلى الملف كما هو
+import os
+import requests
+from flask import Flask, request
 
-TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+app = Flask(__name__)
+
+# اقرأ التوكن من Environment Variables
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+
+TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}"
+
+@app.route("/")
+def home():
+    return "Qiyas Bot is running ✅"
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    data = request.get_json()
+    update = request.get_json()
+    if not update:
+        return "no update"
 
-    if "message" in data and "text" in data["message"]:
-        chat_id = data["message"]["chat"]["id"]
-        user_text = data["message"]["text"]
+    chat_id = update["message"]["chat"]["id"]
+    user_message = update["message"].get("text", "")
 
-        ai_reply = None
-        if AI_API_KEY:
-            headers = {
-                "Authorization": f"Bearer {AI_API_KEY}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": os.getenv("AI_MODEL", "gpt-4o-mini"),
-                "messages": [
-                    {"role": "system", "content": "أنت مساعد ذكي للتدريب على اختبارات القدرات (Qiyas)."},
-                    {"role": "user", "content": user_text}
-                ]
-            }
-            try:
-                r = requests.post(OPENAI_URL, headers=headers, json=payload, timeout=20)
-                if r.status_code == 200:
-                    result = r.json()
-                    ai_reply = result["choices"][0]["message"]["content"].strip()
-                else:
-                    # طباعة مفيدة في اللوق لمعرفة السبب (401/429/500...)
-                    print("OpenAI error:", r.status_code, r.text)
-                    ai_reply = "⚠️ تعذر الاتصال بالذكاء الاصطناعي (تحقق من المفتاح/الموديل)."
-            except Exception as e:
-                print("OpenAI exception:", e)
-                ai_reply = "⚠️ صار خطأ أثناء الاتصال بالذكاء الاصطناعي."
-        else:
-            ai_reply = "⚠️ مفتاح الذكاء الاصطناعي غير مضبوط (AI_API_KEY)."
+    # رد تجريبي مباشر
+    reply_text = f"📚 أهلاً بك في بوت القدرات!\n\nرسالتك: {user_message}"
 
-        # تلغرام يقبل حتى 4096 حرف؛ نقص الرسالة لو طالت
-        if len(ai_reply) > 4096:
-            ai_reply = ai_reply[:4090] + " ..."
+    # إرسال الرد إلى تيليجرام
+    send_message(chat_id, reply_text)
 
-        requests.post(TELEGRAM_URL, json={"chat_id": chat_id, "text": ai_reply})
+    return "ok"
 
-    return "ok", 200
+def send_message(chat_id, text):
+    url = f"{TELEGRAM_URL}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": text
+    }
+    requests.post(url, json=payload)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
