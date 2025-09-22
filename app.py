@@ -1,162 +1,100 @@
 import os
 import json
+import random
 import logging
 from flask import Flask, request
-from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram import Bot, Update
+from telegram.ext import Dispatcher, MessageHandler, Filters, CommandHandler
+import requests
 
-# إعداد اللوجات
+# إعداد اللوقز
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-if not TOKEN:
-    raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
+# جلب المتغيرات من Render
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
-bot = Bot(token=TOKEN)
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
+
 app = Flask(__name__)
-dispatcher = Dispatcher(bot, None, workers=0)
 
-# تحميل بنك الأسئلة
+# تحميل بنك الأسئلة من ملف data.json
 with open("data.json", "r", encoding="utf-8") as f:
     QUESTIONS = json.load(f)
 
-# تقدم المستخدمين: user_id → {index, correct, wrong}
-user_progress = {}
 
-# كيبورد إعادة التشغيل
-RESTART_TEXT = "🔁 إعادة الاختبار"
-restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True, one_time_keyboard=True)
+# دالة لاختيار سؤال عشوائي
+def get_random_question():
+    return random.choice(QUESTIONS)
 
-def reset_user(user_id: int):
-    user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
 
-def send_question(update: Update, context: CallbackContext, q_index: int, user_id: int):
-    """يعرض السؤال أو النتيجة النهائية إن انتهى"""
-    total_q = len(QUESTIONS)
+# دالة للرد من الذكاء الاصطناعي
+def ask_ai(prompt: str) -> str:
+    try:
+        url = "https://api.openai.com/v1/responses"
+        headers = {
+            "Authorization": f"Bearer {AI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {"model": AI_MODEL, "input": prompt}
 
-    if q_index >= total_q:
-        correct = user_progress[user_id]["correct"]
-        wrong = user_progress[user_id]["wrong"]
-        total = correct + wrong
-        score = round((correct / total) * 100, 2) if total > 0 else 0.0
+        response = requests.post(url, headers=headers, json=payload)
+        data = response.json()
 
-        update.message.reply_text(
-            f"🎉 خلصت الاختبار!\n\n"
-            f"✅ صحيحة: {correct}\n"
-            f"❌ خاطئة: {wrong}\n"
-            f"📊 الدرجة: {score}%",
-            reply_markup=restart_kb
-        )
-        return
+        if "output" in data:
+            return data["output"][0]["content"][0]["text"]
+        elif "choices" in data:
+            return data["choices"][0]["message"]["content"]
+        else:
+            return "⚠️ تعذّر الحصول على رد من الذكاء الاصطناعي."
+    except Exception as e:
+        logging.error(f"AI Error: {e}")
+        return "⚠️ خطأ في الاتصال بالذكاء الاصطناعي."
 
-    q = QUESTIONS[q_index]
-    text = f"❓ السؤال {q_index+1}/{total_q}\n\n{q['question']}\n\n"
-    for i, choice in enumerate(q["choices"], start=1):
+
+# أوامر البوت
+def start(update: Update, context):
+    update.message.reply_text("👋 أهلاً! أرسل 'سؤال' للحصول على سؤال عشوائي، أو اكتب أي شيء للتحدث مع الذكاء الاصطناعي.")
+
+
+def question(update: Update, context):
+    q = get_random_question()
+    text = f"📘 سؤال:\n{q['question']}\n\nالاختيارات:\n"
+    for i, choice in enumerate(q["choices"], 1):
         text += f"{i}. {choice}\n"
+    update.message.reply_text(text)
 
-    update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
-# /start
-def start(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    reset_user(user_id)
-    update.message.reply_text("🚀 أهلاً! ابدأ الاختبار الآن. أجب برقم (1–4).")
-    send_question(update, context, 0, user_id)
-
-# /quiz (إعادة البدء)
-def quiz(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    reset_user(user_id)
-    send_question(update, context, 0, user_id)
-
-# /score (عرض النتيجة الحالية)
-def score(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    if user_id not in user_progress:
-        update.message.reply_text("ℹ️ اكتب /quiz للبدء ثم استخدم /score لعرض نتيجتك.")
-        return
-    prog = user_progress[user_id]
-    idx = prog["index"]          # 0-based
-    correct = prog["correct"]
-    wrong = prog["wrong"]
-    total = correct + wrong
-    pct = round((correct / total) * 100, 2) if total > 0 else 0.0
-    update.message.reply_text(
-        f"📊 نتيجتك الحالية:\n"
-        f"السؤال الحالي: {min(idx+1, len(QUESTIONS))}/{len(QUESTIONS)}\n"
-        f"✅ صحيحة: {correct}\n"
-        f"❌ خاطئة: {wrong}\n"
-        f"📈 النسبة: {pct}%"
-    )
-
-# استقبال الإجابات والأوامر النصية
-def answer(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    text = (update.message.text or "").strip()
-
-    # زر إعادة الاختبار
-    if text == RESTART_TEXT:
-        reset_user(user_id)
-        update.message.reply_text("🔁 بدأنا من جديد! بالتوفيق 🤍", reply_markup=ReplyKeyboardRemove())
-        send_question(update, context, 0, user_id)
-        return
-
-    if user_id not in user_progress:
-        update.message.reply_text("💡 اكتب /quiz للبدء.")
-        return
-
-    q_index = user_progress[user_id]["index"]
-    if q_index >= len(QUESTIONS):
-        update.message.reply_text("✅ الاختبار انتهى. اضغط الزر لإعادته.", reply_markup=restart_kb)
-        return
-
-    q = QUESTIONS[q_index]
-
-    if not text.isdigit():
-        update.message.reply_text("⚠️ اكتب رقم الاختيار (1، 2، 3، 4).")
-        return
-
-    choice_num = int(text) - 1
-    if choice_num < 0 or choice_num > 3:
-        update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
-        return
-
-    if choice_num == q["answer_index"]:
-        user_progress[user_id]["correct"] += 1
-        update.message.reply_text(f"✅ إجابة صحيحة!\n{q.get('explanation','')}".strip())
+def handle_message(update: Update, context):
+    user_text = update.message.text
+    if "سؤال" in user_text:
+        return question(update, context)
     else:
-        user_progress[user_id]["wrong"] += 1
-        correct_choice = q["choices"][q["answer_index"]]
-        explanation = q.get("explanation", "")
-        update.message.reply_text(
-            f"❌ خطأ.\n"
-            f"الصحيح: {correct_choice}\n"
-            f"{explanation}".strip()
-        )
+        ai_reply = ask_ai(user_text)
+        update.message.reply_text(ai_reply)
 
-    # التالي
-    user_progress[user_id]["index"] = q_index + 1
-    send_question(update, context, user_progress[user_id]["index"], user_id)
 
-# ربط الأوامر
+# إعداد الديسباتشر
+dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("quiz", quiz))
-dispatcher.add_handler(CommandHandler("score", score))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, answer))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-# Webhook
-@app.route(f"/{TOKEN}", methods=["POST"])
+
+# Webhook من Render
+@app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
-@app.route("/", methods=["GET"])
+
+@app.route("/")
 def home():
-    return "✅ البوت شغال!"
+    return "✅ Bot is running on Render!"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
