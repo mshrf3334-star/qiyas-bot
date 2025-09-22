@@ -1,91 +1,94 @@
 import os
 import json
-import logging
 from flask import Flask, request
-from telegram import Bot, Update, InputFile, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
-import requests
+from telegram import Bot, Update, ReplyKeyboardMarkup
+from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
 
-# إعداد اللوج
-logging.basicConfig(level=logging.INFO)
+# قراءة المتغيرات من Render
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.environ.get("AI_API_KEY")
+AI_MODEL = os.environ.get("AI_MODEL", "openai/gpt-4o-mini")
 
-# أخذ التوكن والمفاتيح من Environment
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-AI_API_KEY = os.getenv("AI_API_KEY")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+bot = Bot(token=TOKEN)
 
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
-
-# Flask
+# Flask app
 app = Flask(__name__)
 
-# Dispatcher
+# Dispatcher لتيليجرام
 dispatcher = Dispatcher(bot, None, workers=0)
 
 # تحميل بنك الأسئلة
-QUESTIONS_FILE = "data.json"
-if os.path.exists(QUESTIONS_FILE):
-    with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
-        QUESTIONS = json.load(f)
-else:
-    QUESTIONS = []
+with open("data.json", "r", encoding="utf-8") as f:
+    QUESTIONS = json.load(f)
 
-# دالة سؤال الذكاء الاصطناعي
-def ask_ai(prompt: str) -> str:
-    try:
-        r = requests.post(
-            "https://api.openai.com/v1/responses",
-            headers={"Authorization": f"Bearer {AI_API_KEY}"},
-            json={"model": AI_MODEL, "input": prompt},
-            timeout=30
-        )
-        data = r.json()
-        return data["output"][0]["content"][0]["text"]
-    except Exception as e:
-        return f"⚠️ تعذّر الاتصال بالذكاء الاصطناعي: {e}"
+# متغير لتتبع حالة المستخدم
+user_state = {}
 
-# أوامر
-def start(update: Update, context: CallbackContext):
+# دالة البدء
+def start(update: Update, context):
     update.message.reply_text(
-        "مرحباً 👋\nهذا بوت قياس.\n"
-        "أرسل: 'سؤال' لأخذ سؤال عشوائي من بنك الأسئلة.\n"
-        "أو أرسل أي استفسار لأسأله الذكاء الاصطناعي 🤖."
+        "👋 أهلاً بك في بوت القدرات.\n"
+        "أرسل أي رسالة للبدء بالأسئلة."
     )
 
-def ask_question(update: Update, context: CallbackContext):
-    import random
-    if QUESTIONS:
-        q = random.choice(QUESTIONS)
-        text = f"❓ {q['question']}\n\nالخيارات:\n"
-        for i, c in enumerate(q["choices"], start=1):
-            text += f"{i}. {c}\n"
-        update.message.reply_text(text)
-    else:
-        update.message.reply_text("⚠️ لا يوجد أسئلة حالياً في البنك.")
+# دالة إرسال سؤال
+def send_question(update: Update, context):
+    chat_id = update.message.chat_id
+    state = user_state.get(chat_id, {"index": 0, "score": 0})
 
-def handle_message(update: Update, context: CallbackContext):
-    text = update.message.text
-    if text.strip() == "سؤال":
-        ask_question(update, context)
-    else:
-        reply = ask_ai(text)
-        update.message.reply_text(reply)
+    if state["index"] < len(QUESTIONS):
+        q = QUESTIONS[state["index"]]
+        question_text = f"س{q['id']}: {q['question']}"
+        choices = q["choices"]
 
-# ربط الهاندلرز
+        keyboard = [[c] for c in choices]
+        reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+
+        update.message.reply_text(question_text, reply_markup=reply_markup)
+        user_state[chat_id] = state
+    else:
+        score = state["score"]
+        update.message.reply_text(f"✅ انتهيت! درجتك: {score}/{len(QUESTIONS)}")
+        user_state[chat_id] = {"index": 0, "score": 0}
+
+# دالة استلام الإجابات
+def handle_answer(update: Update, context):
+    chat_id = update.message.chat_id
+    state = user_state.get(chat_id, {"index": 0, "score": 0})
+
+    if state["index"] < len(QUESTIONS):
+        q = QUESTIONS[state["index"]]
+        answer = update.message.text.strip()
+
+        if answer == q["answer_index"]:
+            state["score"] += 1
+            update.message.reply_text("👍 إجابة صحيحة!")
+        else:
+            update.message.reply_text(
+                f"❌ خطأ. الإجابة الصحيحة: {q['answer_index']}"
+            )
+
+        state["index"] += 1
+        user_state[chat_id] = state
+        send_question(update, context)
+    else:
+        update.message.reply_text("🔄 أرسل /start للبدء من جديد.")
+
+# ربط الأوامر بالـ Dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_answer))
 
-# Webhook route
-@app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
+# Webhook endpoint
+@app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
+# للتجربة محلياً
 @app.route("/")
-def index():
-    return "✅ Bot is running!"
+def home():
+    return "بوت القدرات شغال ✅"
 
-# تشغيل السيرفر
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
