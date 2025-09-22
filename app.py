@@ -1,23 +1,8 @@
 import os
 import json
 import logging
-import sys
-import types
+import requests
 from flask import Flask, request
-
-# ========= Polyfill لموديول imghdr المحذوف في Python 3.13 =========
-# يجب أن يتم قبل أي import لـ telegram حتى لا يفشل التحميل
-if "imghdr" not in sys.modules:
-    imghdr_mod = types.ModuleType("imghdr")
-
-    def what(file, h=None):
-        # لسنا بحاجة لاكتشاف نوع الصور في هذا البوت
-        return None
-
-    imghdr_mod.what = what
-    sys.modules["imghdr"] = imghdr_mod
-# ==================================================================
-
 from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
 
@@ -27,7 +12,11 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+# مفاتيح البيئة
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-4o-mini")
+
 if not TOKEN:
     raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
 
@@ -35,35 +24,39 @@ bot = Bot(token=TOKEN)
 app = Flask(__name__)
 dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
 
-# تحميل بنك الأسئلة من ملف في الجذر باسم data.json
-QUESTIONS_FILE = "data.json"
-if os.path.exists(QUESTIONS_FILE):
-    with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
-        QUESTIONS = json.load(f)
-else:
-    QUESTIONS = []
-    logging.warning("لم يتم العثور على data.json — سيتم تشغيل البوت بدون أسئلة.")
+# تحميل بنك الأسئلة
+with open("data.json", "r", encoding="utf-8") as f:
+    QUESTIONS = json.load(f)
 
-# تقدم المستخدمين: user_id → {index, correct, wrong}
-user_progress = {}
+# تقدم المستخدمين + وضعية "اسأل قياس"
+user_progress = {}     # user_id -> {index, correct, wrong}
+ask_mode = set()       # المستخدمين في وضعية "اسأل قياس"
 
-# كيبورد إعادة التشغيل
+# القائمة الرئيسية
+MAIN_MENU_KB = ReplyKeyboardMarkup(
+    [
+        ["🧠 اختبار القدرات"],
+        ["📊 نتيجتي", "❓ اسأل قياس"]
+    ],
+    resize_keyboard=True
+)
+
 RESTART_TEXT = "🔁 إعادة الاختبار"
 restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True, one_time_keyboard=True)
 
+# =========================
+# دوال مساعدة
+# =========================
 def reset_user(user_id: int):
     user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
 
 def send_question(update: Update, context: CallbackContext, q_index: int, user_id: int):
-    """يعرض السؤال أو النتيجة النهائية إن انتهى"""
     total_q = len(QUESTIONS)
-
     if q_index >= total_q:
         correct = user_progress[user_id]["correct"]
-        wrong = user_progress[user_id]["wrong"]
-        total = correct + wrong
-        score = round((correct / total) * 100, 2) if total > 0 else 0.0
-
+        wrong   = user_progress[user_id]["wrong"]
+        total   = correct + wrong
+        score   = round((correct / total) * 100, 2) if total > 0 else 0.0
         update.message.reply_text(
             f"🎉 خلصت الاختبار!\n\n"
             f"✅ صحيحة: {correct}\n"
@@ -80,70 +73,124 @@ def send_question(update: Update, context: CallbackContext, q_index: int, user_i
 
     update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
-# /start
+def ask_qiyas(prompt: str) -> str:
+    """يرد على سؤال القدرات فقط بإجابات قصيرة"""
+    keywords = ["قدرات", "اختبار", "كمي", "لفظي", "قدرة", "قياس"]
+    if not any(word in prompt for word in keywords):
+        return "⚠️ اكتب سؤال له علاقة باختبار القدرات فقط."
+
+    if not AI_API_KEY:
+        return "ℹ️ وضعية (اسأل قياس) غير مفعلة لأن AI_API_KEY غير مضبوط."
+
+    try:
+        r = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": AI_MODEL,
+                "input": (
+                    "جاوب بإيجاز وبالعربية (3–4 أسطر كحد أقصى) "
+                    "على السؤال التالي المتعلق باختبار القدرات:\n\n"
+                    f"{prompt}"
+                )
+            },
+            timeout=30
+        )
+        data = r.json()
+        if "output" in data and data["output"]:
+            node = data["output"][0]["content"][0]
+            return node.get("text", "⚠️ لم يصل رد من (اسأل قياس).").strip()
+        return "⚠️ لم يصل رد من (اسأل قياس)."
+    except Exception as e:
+        logging.exception("AI error")
+        return f"⚠️ خطأ أثناء الاتصال بـ (اسأل قياس): {e}"
+
+# =========================
+# أوامر
+# =========================
 def start(update: Update, context: CallbackContext):
-    if not QUESTIONS:
-        update.message.reply_text("⚠️ لا توجد أسئلة حالياً. أضف data.json ثم أعد النشر.")
-        return
-    user_id = update.message.from_user.id
-    reset_user(user_id)
-    update.message.reply_text("🚀 أهلاً! ابدأ الاختبار الآن. أجب برقم (1–4).")
-    send_question(update, context, 0, user_id)
+    update.message.reply_text("مرحباً! اختر من الأزرار بالأسفل:", reply_markup=MAIN_MENU_KB)
 
-# /quiz (إعادة البدء)
 def quiz(update: Update, context: CallbackContext):
-    if not QUESTIONS:
-        update.message.reply_text("⚠️ لا توجد أسئلة حالياً.")
-        return
     user_id = update.message.from_user.id
     reset_user(user_id)
+    update.message.reply_text("🚀 بدأنا اختبار القدرات. أجب برقم (1–4).", reply_markup=ReplyKeyboardRemove())
     send_question(update, context, 0, user_id)
 
-# /score (عرض النتيجة الحالية)
 def score(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     if user_id not in user_progress:
-        update.message.reply_text("ℹ️ اكتب /quiz للبدء ثم استخدم /score لعرض نتيجتك.")
+        update.message.reply_text("ℹ️ ابدأ أولاً بالضغط على (🧠 اختبار القدرات).", reply_markup=MAIN_MENU_KB)
         return
     prog = user_progress[user_id]
-    idx = prog["index"]          # 0-based
-    correct = prog["correct"]
-    wrong = prog["wrong"]
-    total = correct + wrong
-    pct = round((correct / total) * 100, 2) if total > 0 else 0.0
+    idx  = prog["index"]
+    c    = prog["correct"]
+    w    = prog["wrong"]
+    total = c + w
+    pct   = round((c / total) * 100, 2) if total > 0 else 0.0
     update.message.reply_text(
-        f"📊 نتيجتك الحالية:\n"
+        f"📊 نتيجتك:\n"
         f"السؤال الحالي: {min(idx+1, len(QUESTIONS))}/{len(QUESTIONS)}\n"
-        f"✅ صحيحة: {correct}\n"
-        f"❌ خاطئة: {wrong}\n"
-        f"📈 النسبة: {pct}%"
+        f"✅ صحيحة: {c}\n"
+        f"❌ خاطئة: {w}\n"
+        f"📈 النسبة: {pct}%",
+        reply_markup=MAIN_MENU_KB
     )
 
-# استقبال الإجابات والأوامر النصية
-def answer(update: Update, context: CallbackContext):
+# =========================
+# معالج الرسائل
+# =========================
+def handle_text(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     text = (update.message.text or "").strip()
 
-    # زر إعادة الاختبار
-    if text == RESTART_TEXT:
-        reset_user(user_id)
-        update.message.reply_text("🔁 بدأنا من جديد! بالتوفيق 🤍", reply_markup=ReplyKeyboardRemove())
-        send_question(update, context, 0, user_id)
+    # أزرار القائمة
+    if text == "🧠 اختبار القدرات":
+        if user_id in ask_mode:
+            ask_mode.discard(user_id)
+        quiz(update, context)
         return
 
+    if text == "📊 نتيجتي":
+        score(update, context)
+        return
+
+    if text == "❓ اسأل قياس":
+        ask_mode.add(user_id)
+        update.message.reply_text(
+            "اكتب سؤالك الآن 👇 (فقط أسئلة القدرات)",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
+
+    if text == "🔁 إعادة الاختبار":
+        if user_id in ask_mode:
+            ask_mode.discard(user_id)
+        quiz(update, context)
+        return
+
+    # وضعية "اسأل قياس"
+    if user_id in ask_mode:
+        reply = ask_qiyas(text)
+        update.message.reply_text(reply, reply_markup=MAIN_MENU_KB)
+        ask_mode.discard(user_id)
+        return
+
+    # منطق الإجابة على الأسئلة
     if user_id not in user_progress:
-        update.message.reply_text("💡 اكتب /quiz للبدء.")
+        update.message.reply_text("💡 اختر من القائمة:", reply_markup=MAIN_MENU_KB)
         return
 
     q_index = user_progress[user_id]["index"]
     if q_index >= len(QUESTIONS):
-        update.message.reply_text("✅ الاختبار انتهى. اضغط الزر لإعادته.", reply_markup=restart_kb)
+        update.message.reply_text("✅ الاختبار انتهى. اختر من القائمة:", reply_markup=MAIN_MENU_KB)
         return
 
-    q = QUESTIONS[q_index]
-
     if not text.isdigit():
-        update.message.reply_text("⚠️ اكتب رقم الاختيار (1، 2، 3، 4).")
+        update.message.reply_text("⚠️ اكتب رقم الاختيار (1–4).")
         return
 
     choice_num = int(text) - 1
@@ -151,28 +198,27 @@ def answer(update: Update, context: CallbackContext):
         update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
         return
 
+    q = QUESTIONS[q_index]
     if choice_num == q["answer_index"]:
         user_progress[user_id]["correct"] += 1
         update.message.reply_text(f"✅ إجابة صحيحة!\n{q.get('explanation','')}".strip())
     else:
         user_progress[user_id]["wrong"] += 1
         correct_choice = q["choices"][q["answer_index"]]
-        explanation = q.get("explanation", "")
         update.message.reply_text(
-            f"❌ خطأ.\n"
-            f"الصحيح: {correct_choice}\n"
-            f"{explanation}".strip()
+            f"❌ خطأ.\nالصحيح: {correct_choice}\n{q.get('explanation','')}".strip()
         )
 
-    # التالي
     user_progress[user_id]["index"] = q_index + 1
     send_question(update, context, user_progress[user_id]["index"], user_id)
 
-# ربط الأوامر
+# =========================
+# Handlers
+# =========================
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("quiz", quiz))
 dispatcher.add_handler(CommandHandler("score", score))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, answer))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
 
 # Webhook
 @app.route(f"/{TOKEN}", methods=["POST"])
