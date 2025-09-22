@@ -13,7 +13,7 @@ logging.basicConfig(
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
-    raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
+    raise RuntimeError("⚠️ لازم تحدد TELEGRAM_BOT_TOKEN في المتغيرات")
 
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
@@ -25,7 +25,6 @@ with open("data.json", "r", encoding="utf-8") as f:
 
 # تقدم المستخدمين
 user_progress = {}
-
 RESTART_TEXT = "🔁 إعادة الاختبار"
 restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True, one_time_keyboard=True)
 
@@ -34,7 +33,6 @@ def reset_user(user_id: int):
 
 def send_question(update: Update, context: CallbackContext, q_index: int, user_id: int):
     total_q = len(QUESTIONS)
-
     if q_index >= total_q:
         correct = user_progress[user_id]["correct"]
         wrong = user_progress[user_id]["wrong"]
@@ -137,7 +135,7 @@ def answer(update: Update, context: CallbackContext):
     user_progress[user_id]["index"] = q_index + 1
     send_question(update, context, user_progress[user_id]["index"], user_id)
 
-# Handlers
+# ربط الأوامر
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("quiz", quiz))
 dispatcher.add_handler(CommandHandler("score", score))
