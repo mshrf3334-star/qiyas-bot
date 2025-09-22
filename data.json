@@ -2,232 +2,4374 @@
   {
     "id": 1,
     "type": "math",
-    "question": "ما ناتج 12 + 15؟",
-    "choices": ["25", "27", "28", "30"],
+    "question": "ما ناتج 11 + 9؟",
+    "choices": [
+      "21",
+      "20",
+      "22",
+      "19"
+    ],
     "answer_index": 1,
-    "explanation": "12 + 15 = 27",
-    "tags": ["رياضيات", "جمع"]
+    "explanation": "11+9=20.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 2,
     "type": "math",
-    "question": "ما ناتج 40 - 18؟",
-    "choices": ["20", "21", "22", "23"],
-    "answer_index": 2,
-    "explanation": "40 - 18 = 22",
-    "tags": ["رياضيات", "طرح"]
+    "question": "ما ناتج 11 + 16؟",
+    "choices": [
+      "29",
+      "28",
+      "26",
+      "27"
+    ],
+    "answer_index": 3,
+    "explanation": "11+16=27.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 3,
     "type": "math",
-    "question": "ما ناتج 7 × 8؟",
-    "choices": ["54", "56", "57", "64"],
-    "answer_index": 1,
-    "explanation": "7 × 8 = 56",
-    "tags": ["رياضيات", "ضرب"]
+    "question": "ما ناتج 11 + 23؟",
+    "choices": [
+      "34",
+      "36",
+      "35",
+      "33"
+    ],
+    "answer_index": 0,
+    "explanation": "11+23=34.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 4,
     "type": "math",
-    "question": "ما ناتج 81 ÷ 9؟",
-    "choices": ["7", "8", "9", "10"],
+    "question": "ما ناتج 11 + 30؟",
+    "choices": [
+      "43",
+      "45",
+      "41",
+      "39"
+    ],
     "answer_index": 2,
-    "explanation": "81 ÷ 9 = 9",
-    "tags": ["رياضيات", "قسمة"]
+    "explanation": "11+30=41.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 5,
     "type": "math",
-    "question": "إذا زاد عدد 120 بنسبة 25% فما الناتج؟",
-    "choices": ["140", "145", "150", "155"],
-    "answer_index": 2,
-    "explanation": "الزيادة 30 → 120 + 30 = 150",
-    "tags": ["رياضيات", "نسب"]
-  }
-]
-[
-  {
-    "id": 1,
-    "type": "math",
-    "question": "ما ناتج 12 + 15؟",
-    "choices": ["25", "27", "28", "30"],
-    "answer_index": 1,
-    "explanation": "12 + 15 = 27",
-    "tags": ["رياضيات", "جمع"]
-  },
-  {
-    "id": 2,
-    "type": "math",
-    "question": "ما ناتج 40 - 18؟",
-    "choices": ["20", "21", "22", "23"],
-    "answer_index": 2,
-    "explanation": "40 - 18 = 22",
-    "tags": ["رياضيات", "طرح"]
-  },
-  {
-    "id": 3,
-    "type": "math",
-    "question": "ما ناتج 7 × 8؟",
-    "choices": ["54", "56", "57", "64"],
-    "answer_index": 1,
-    "explanation": "7 × 8 = 56",
-    "tags": ["رياضيات", "ضرب"]
-  },
-  {
-    "id": 4,
-    "type": "math",
-    "question": "ما ناتج 81 ÷ 9؟",
-    "choices": ["7", "8", "9", "10"],
-    "answer_index": 2,
-    "explanation": "81 ÷ 9 = 9",
-    "tags": ["رياضيات", "قسمة"]
-  },
-  {
-    "id": 5,
-    "type": "math",
-    "question": "إذا زاد عدد 120 بنسبة 25% فما الناتج؟",
-    "choices": ["140", "145", "150", "155"],
-    "answer_index": 2,
-    "explanation": "الزيادة 30 → 120 + 30 = 150",
-    "tags": ["رياضيات", "نسب"]
+    "question": "ما ناتج 11 + 37؟",
+    "choices": [
+      "50",
+      "52",
+      "46",
+      "48"
+    ],
+    "answer_index": 3,
+    "explanation": "11+37=48.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 6,
     "type": "math",
-    "question": "ما ناتج 33 + 47؟",
-    "choices": ["70", "75", "80", "85"],
-    "answer_index": 2,
-    "explanation": "33 + 47 = 80",
-    "tags": ["رياضيات", "جمع"]
+    "question": "ما ناتج 16 + 9؟",
+    "choices": [
+      "25",
+      "27",
+      "26",
+      "24"
+    ],
+    "answer_index": 0,
+    "explanation": "16+9=25.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 7,
     "type": "math",
-    "question": "ما ناتج 95 - 28؟",
-    "choices": ["65", "66", "67", "68"],
-    "answer_index": 1,
-    "explanation": "95 - 28 = 67",
-    "tags": ["رياضيات", "طرح"]
+    "question": "ما ناتج 16 + 16؟",
+    "choices": [
+      "34",
+      "33",
+      "32",
+      "31"
+    ],
+    "answer_index": 2,
+    "explanation": "16+16=32.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 8,
     "type": "math",
-    "question": "ما ناتج 12 × 9؟",
-    "choices": ["96", "108", "118", "128"],
+    "question": "ما ناتج 16 + 23؟",
+    "choices": [
+      "41",
+      "39",
+      "40",
+      "38"
+    ],
     "answer_index": 1,
-    "explanation": "12 × 9 = 108",
-    "tags": ["رياضيات", "ضرب"]
+    "explanation": "16+23=39.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 9,
     "type": "math",
-    "question": "ما ناتج 144 ÷ 12؟",
-    "choices": ["10", "11", "12", "13"],
-    "answer_index": 2,
-    "explanation": "144 ÷ 12 = 12",
-    "tags": ["رياضيات", "قسمة"]
+    "question": "ما ناتج 16 + 30؟",
+    "choices": [
+      "48",
+      "44",
+      "50",
+      "46"
+    ],
+    "answer_index": 3,
+    "explanation": "16+30=46.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
   },
   {
     "id": 10,
     "type": "math",
-    "question": "إذا زاد عدد 200 بنسبة 10% فما الناتج؟",
-    "choices": ["210", "215", "220", "225"],
+    "question": "ما ناتج 16 + 37؟",
+    "choices": [
+      "53",
+      "55",
+      "57",
+      "51"
+    ],
     "answer_index": 0,
-    "explanation": "200 + 20 = 220",
-    "tags": ["رياضيات", "نسب"]
-  }
-  // ... كمل بنفس النمط حتى id: 50
-]
-,
+    "explanation": "16+37=53.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 11,
+    "type": "math",
+    "question": "ما ناتج 21 + 9؟",
+    "choices": [
+      "30",
+      "29",
+      "31",
+      "32"
+    ],
+    "answer_index": 0,
+    "explanation": "21+9=30.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 12,
+    "type": "math",
+    "question": "ما ناتج 21 + 16؟",
+    "choices": [
+      "39",
+      "38",
+      "37",
+      "36"
+    ],
+    "answer_index": 2,
+    "explanation": "21+16=37.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 13,
+    "type": "math",
+    "question": "ما ناتج 21 + 23؟",
+    "choices": [
+      "46",
+      "42",
+      "48",
+      "44"
+    ],
+    "answer_index": 3,
+    "explanation": "21+23=44.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 14,
+    "type": "math",
+    "question": "ما ناتج 21 + 30؟",
+    "choices": [
+      "53",
+      "55",
+      "51",
+      "49"
+    ],
+    "answer_index": 2,
+    "explanation": "21+30=51.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 15,
+    "type": "math",
+    "question": "ما ناتج 21 + 37؟",
+    "choices": [
+      "56",
+      "58",
+      "62",
+      "60"
+    ],
+    "answer_index": 1,
+    "explanation": "21+37=58.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 16,
+    "type": "math",
+    "question": "ما ناتج 26 + 9؟",
+    "choices": [
+      "37",
+      "34",
+      "36",
+      "35"
+    ],
+    "answer_index": 3,
+    "explanation": "26+9=35.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 17,
+    "type": "math",
+    "question": "ما ناتج 26 + 16؟",
+    "choices": [
+      "42",
+      "46",
+      "44",
+      "40"
+    ],
+    "answer_index": 0,
+    "explanation": "26+16=42.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 18,
+    "type": "math",
+    "question": "ما ناتج 26 + 23؟",
+    "choices": [
+      "51",
+      "47",
+      "49",
+      "53"
+    ],
+    "answer_index": 2,
+    "explanation": "26+23=49.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 19,
+    "type": "math",
+    "question": "ما ناتج 26 + 30؟",
+    "choices": [
+      "54",
+      "60",
+      "58",
+      "56"
+    ],
+    "answer_index": 3,
+    "explanation": "26+30=56.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 20,
+    "type": "math",
+    "question": "ما ناتج 26 + 37؟",
+    "choices": [
+      "66",
+      "60",
+      "69",
+      "63"
+    ],
+    "answer_index": 3,
+    "explanation": "26+37=63.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 21,
+    "type": "math",
+    "question": "ما ناتج 31 + 9؟",
+    "choices": [
+      "40",
+      "44",
+      "38",
+      "42"
+    ],
+    "answer_index": 0,
+    "explanation": "31+9=40.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 22,
+    "type": "math",
+    "question": "ما ناتج 31 + 16؟",
+    "choices": [
+      "49",
+      "47",
+      "45",
+      "51"
+    ],
+    "answer_index": 1,
+    "explanation": "31+16=47.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 23,
+    "type": "math",
+    "question": "ما ناتج 31 + 23؟",
+    "choices": [
+      "58",
+      "54",
+      "52",
+      "56"
+    ],
+    "answer_index": 1,
+    "explanation": "31+23=54.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 24,
+    "type": "math",
+    "question": "ما ناتج 31 + 30؟",
+    "choices": [
+      "67",
+      "61",
+      "64",
+      "58"
+    ],
+    "answer_index": 1,
+    "explanation": "31+30=61.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 25,
+    "type": "math",
+    "question": "ما ناتج 31 + 37؟",
+    "choices": [
+      "68",
+      "65",
+      "74",
+      "71"
+    ],
+    "answer_index": 0,
+    "explanation": "31+37=68.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 26,
+    "type": "math",
+    "question": "ما ناتج 36 + 9؟",
+    "choices": [
+      "43",
+      "47",
+      "49",
+      "45"
+    ],
+    "answer_index": 3,
+    "explanation": "36+9=45.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 27,
+    "type": "math",
+    "question": "ما ناتج 36 + 16؟",
+    "choices": [
+      "54",
+      "52",
+      "50",
+      "56"
+    ],
+    "answer_index": 1,
+    "explanation": "36+16=52.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 28,
+    "type": "math",
+    "question": "ما ناتج 36 + 23؟",
+    "choices": [
+      "59",
+      "63",
+      "57",
+      "61"
+    ],
+    "answer_index": 0,
+    "explanation": "36+23=59.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 29,
+    "type": "math",
+    "question": "ما ناتج 36 + 30؟",
+    "choices": [
+      "63",
+      "66",
+      "72",
+      "69"
+    ],
+    "answer_index": 1,
+    "explanation": "36+30=66.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 30,
+    "type": "math",
+    "question": "ما ناتج 36 + 37؟",
+    "choices": [
+      "73",
+      "76",
+      "70",
+      "79"
+    ],
+    "answer_index": 0,
+    "explanation": "36+37=73.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 31,
+    "type": "math",
+    "question": "ما ناتج 41 + 9؟",
+    "choices": [
+      "52",
+      "48",
+      "54",
+      "50"
+    ],
+    "answer_index": 3,
+    "explanation": "41+9=50.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 32,
+    "type": "math",
+    "question": "ما ناتج 41 + 16؟",
+    "choices": [
+      "57",
+      "55",
+      "61",
+      "59"
+    ],
+    "answer_index": 0,
+    "explanation": "41+16=57.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 33,
+    "type": "math",
+    "question": "ما ناتج 41 + 23؟",
+    "choices": [
+      "64",
+      "67",
+      "61",
+      "70"
+    ],
+    "answer_index": 0,
+    "explanation": "41+23=64.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 34,
+    "type": "math",
+    "question": "ما ناتج 41 + 30؟",
+    "choices": [
+      "68",
+      "71",
+      "74",
+      "77"
+    ],
+    "answer_index": 1,
+    "explanation": "41+30=71.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 35,
+    "type": "math",
+    "question": "ما ناتج 41 + 37؟",
+    "choices": [
+      "75",
+      "84",
+      "81",
+      "78"
+    ],
+    "answer_index": 3,
+    "explanation": "41+37=78.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 36,
+    "type": "math",
+    "question": "ما ناتج 46 + 9؟",
+    "choices": [
+      "59",
+      "53",
+      "55",
+      "57"
+    ],
+    "answer_index": 2,
+    "explanation": "46+9=55.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 37,
+    "type": "math",
+    "question": "ما ناتج 46 + 16؟",
+    "choices": [
+      "59",
+      "65",
+      "68",
+      "62"
+    ],
+    "answer_index": 3,
+    "explanation": "46+16=62.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 38,
+    "type": "math",
+    "question": "ما ناتج 46 + 23؟",
+    "choices": [
+      "72",
+      "75",
+      "66",
+      "69"
+    ],
+    "answer_index": 3,
+    "explanation": "46+23=69.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 39,
+    "type": "math",
+    "question": "ما ناتج 46 + 30؟",
+    "choices": [
+      "82",
+      "73",
+      "79",
+      "76"
+    ],
+    "answer_index": 3,
+    "explanation": "46+30=76.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 40,
+    "type": "math",
+    "question": "ما ناتج 46 + 37؟",
+    "choices": [
+      "87",
+      "83",
+      "79",
+      "91"
+    ],
+    "answer_index": 1,
+    "explanation": "46+37=83.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 41,
+    "type": "math",
+    "question": "ما ناتج 51 + 9؟",
+    "choices": [
+      "63",
+      "66",
+      "57",
+      "60"
+    ],
+    "answer_index": 3,
+    "explanation": "51+9=60.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 42,
+    "type": "math",
+    "question": "ما ناتج 51 + 16؟",
+    "choices": [
+      "67",
+      "73",
+      "64",
+      "70"
+    ],
+    "answer_index": 0,
+    "explanation": "51+16=67.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 43,
+    "type": "math",
+    "question": "ما ناتج 51 + 23؟",
+    "choices": [
+      "71",
+      "74",
+      "77",
+      "80"
+    ],
+    "answer_index": 1,
+    "explanation": "51+23=74.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 44,
+    "type": "math",
+    "question": "ما ناتج 51 + 30؟",
+    "choices": [
+      "85",
+      "89",
+      "77",
+      "81"
+    ],
+    "answer_index": 3,
+    "explanation": "51+30=81.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 45,
+    "type": "math",
+    "question": "ما ناتج 51 + 37؟",
+    "choices": [
+      "92",
+      "88",
+      "84",
+      "96"
+    ],
+    "answer_index": 1,
+    "explanation": "51+37=88.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 46,
+    "type": "math",
+    "question": "ما ناتج 56 + 9؟",
+    "choices": [
+      "62",
+      "65",
+      "71",
+      "68"
+    ],
+    "answer_index": 1,
+    "explanation": "56+9=65.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 47,
+    "type": "math",
+    "question": "ما ناتج 56 + 16؟",
+    "choices": [
+      "78",
+      "75",
+      "69",
+      "72"
+    ],
+    "answer_index": 3,
+    "explanation": "56+16=72.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 48,
+    "type": "math",
+    "question": "ما ناتج 56 + 23؟",
+    "choices": [
+      "76",
+      "85",
+      "82",
+      "79"
+    ],
+    "answer_index": 3,
+    "explanation": "56+23=79.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 49,
+    "type": "math",
+    "question": "ما ناتج 56 + 30؟",
+    "choices": [
+      "86",
+      "94",
+      "90",
+      "82"
+    ],
+    "answer_index": 0,
+    "explanation": "56+30=86.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
+  {
+    "id": 50,
+    "type": "math",
+    "question": "ما ناتج 56 + 37؟",
+    "choices": [
+      "97",
+      "101",
+      "93",
+      "89"
+    ],
+    "answer_index": 2,
+    "explanation": "56+37=93.",
+    "tags": [
+      "رياضيات",
+      "جمع"
+    ]
+  },
   {
     "id": 51,
     "type": "math",
-    "question": "ما ناتج 25 + 37؟",
-    "choices": ["60", "61", "62", "63"],
-    "answer_index": 1,
-    "explanation": "25 + 37 = 62",
-    "tags": ["رياضيات", "جمع"]
+    "question": "ما ناتج 90 - 5؟",
+    "choices": [
+      "85",
+      "89",
+      "93",
+      "81"
+    ],
+    "answer_index": 0,
+    "explanation": "90-5=85.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 52,
     "type": "math",
-    "question": "ما ناتج 88 - 46؟",
-    "choices": ["40", "41", "42", "43"],
-    "answer_index": 2,
-    "explanation": "88 - 46 = 42",
-    "tags": ["رياضيات", "طرح"]
+    "question": "ما ناتج 90 - 10؟",
+    "choices": [
+      "88",
+      "76",
+      "84",
+      "80"
+    ],
+    "answer_index": 3,
+    "explanation": "90-10=80.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 53,
     "type": "math",
-    "question": "ما ناتج 15 × 14؟",
-    "choices": ["200", "205", "210", "215"],
+    "question": "ما ناتج 90 - 15؟",
+    "choices": [
+      "72",
+      "78",
+      "75",
+      "81"
+    ],
     "answer_index": 2,
-    "explanation": "15 × 14 = 210",
-    "tags": ["رياضيات", "ضرب"]
+    "explanation": "90-15=75.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 54,
     "type": "math",
-    "question": "ما ناتج 180 ÷ 15؟",
-    "choices": ["10", "11", "12", "13"],
+    "question": "ما ناتج 90 - 20؟",
+    "choices": [
+      "73",
+      "76",
+      "70",
+      "67"
+    ],
     "answer_index": 2,
-    "explanation": "180 ÷ 15 = 12",
-    "tags": ["رياضيات", "قسمة"]
+    "explanation": "90-20=70.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 55,
     "type": "math",
-    "question": "إذا زاد عدد 320 بنسبة 20% فما الناتج؟",
-    "choices": ["360", "380", "384", "400"],
-    "answer_index": 2,
-    "explanation": "320 + 64 = 384",
-    "tags": ["رياضيات", "نسب"]
+    "question": "ما ناتج 90 - 25؟",
+    "choices": [
+      "71",
+      "65",
+      "62",
+      "68"
+    ],
+    "answer_index": 1,
+    "explanation": "90-25=65.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 56,
     "type": "math",
-    "question": "ما ناتج 64 + 29؟",
-    "choices": ["91", "92", "93", "94"],
-    "answer_index": 1,
-    "explanation": "64 + 29 = 93",
-    "tags": ["رياضيات", "جمع"]
+    "question": "ما ناتج 90 - 30؟",
+    "choices": [
+      "57",
+      "63",
+      "66",
+      "60"
+    ],
+    "answer_index": 3,
+    "explanation": "90-30=60.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 57,
     "type": "math",
-    "question": "ما ناتج 77 - 33؟",
-    "choices": ["42", "43", "44", "45"],
-    "answer_index": 2,
-    "explanation": "77 - 33 = 44",
-    "tags": ["رياضيات", "طرح"]
+    "question": "ما ناتج 86 - 5؟",
+    "choices": [
+      "89",
+      "81",
+      "77",
+      "85"
+    ],
+    "answer_index": 1,
+    "explanation": "86-5=81.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 58,
     "type": "math",
-    "question": "ما ناتج 19 × 11؟",
-    "choices": ["207", "208", "209", "210"],
-    "answer_index": 3,
-    "explanation": "19 × 11 = 209",
-    "tags": ["رياضيات", "ضرب"]
+    "question": "ما ناتج 86 - 10؟",
+    "choices": [
+      "82",
+      "76",
+      "79",
+      "73"
+    ],
+    "answer_index": 1,
+    "explanation": "86-10=76.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 59,
     "type": "math",
-    "question": "ما ناتج 225 ÷ 15؟",
-    "choices": ["14", "15", "16", "17"],
+    "question": "ما ناتج 86 - 15؟",
+    "choices": [
+      "77",
+      "71",
+      "68",
+      "74"
+    ],
     "answer_index": 1,
-    "explanation": "225 ÷ 15 = 15",
-    "tags": ["رياضيات", "قسمة"]
+    "explanation": "86-15=71.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
   },
   {
     "id": 60,
     "type": "math",
-    "question": "إذا زاد عدد 150 بنسبة 30% فما الناتج؟",
-    "choices": ["180", "185", "190", "195"],
+    "question": "ما ناتج 86 - 20؟",
+    "choices": [
+      "63",
+      "72",
+      "69",
+      "66"
+    ],
+    "answer_index": 3,
+    "explanation": "86-20=66.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 61,
+    "type": "math",
+    "question": "ما ناتج 86 - 25؟",
+    "choices": [
+      "58",
+      "67",
+      "61",
+      "64"
+    ],
+    "answer_index": 2,
+    "explanation": "86-25=61.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 62,
+    "type": "math",
+    "question": "ما ناتج 86 - 30؟",
+    "choices": [
+      "54",
+      "60",
+      "56",
+      "58"
+    ],
+    "answer_index": 2,
+    "explanation": "86-30=56.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 63,
+    "type": "math",
+    "question": "ما ناتج 82 - 5؟",
+    "choices": [
+      "74",
+      "77",
+      "80",
+      "83"
+    ],
+    "answer_index": 1,
+    "explanation": "82-5=77.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 64,
+    "type": "math",
+    "question": "ما ناتج 82 - 10؟",
+    "choices": [
+      "72",
+      "75",
+      "78",
+      "69"
+    ],
     "answer_index": 0,
-    "explanation": "150 + 45 = 195",
-    "tags": ["رياضيات", "نسب"]
-  }
-  // ... كمل بنفس النمط حتى id: 100
-]
+    "explanation": "82-10=72.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 65,
+    "type": "math",
+    "question": "ما ناتج 82 - 15؟",
+    "choices": [
+      "70",
+      "64",
+      "67",
+      "73"
+    ],
+    "answer_index": 2,
+    "explanation": "82-15=67.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 66,
+    "type": "math",
+    "question": "ما ناتج 82 - 20؟",
+    "choices": [
+      "68",
+      "59",
+      "65",
+      "62"
+    ],
+    "answer_index": 3,
+    "explanation": "82-20=62.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 67,
+    "type": "math",
+    "question": "ما ناتج 82 - 25؟",
+    "choices": [
+      "59",
+      "61",
+      "57",
+      "55"
+    ],
+    "answer_index": 2,
+    "explanation": "82-25=57.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 68,
+    "type": "math",
+    "question": "ما ناتج 82 - 30؟",
+    "choices": [
+      "54",
+      "50",
+      "52",
+      "56"
+    ],
+    "answer_index": 2,
+    "explanation": "82-30=52.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 69,
+    "type": "math",
+    "question": "ما ناتج 78 - 5؟",
+    "choices": [
+      "73",
+      "79",
+      "76",
+      "70"
+    ],
+    "answer_index": 0,
+    "explanation": "78-5=73.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 70,
+    "type": "math",
+    "question": "ما ناتج 78 - 10؟",
+    "choices": [
+      "74",
+      "65",
+      "68",
+      "71"
+    ],
+    "answer_index": 2,
+    "explanation": "78-10=68.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 71,
+    "type": "math",
+    "question": "ما ناتج 78 - 15؟",
+    "choices": [
+      "69",
+      "60",
+      "63",
+      "66"
+    ],
+    "answer_index": 2,
+    "explanation": "78-15=63.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 72,
+    "type": "math",
+    "question": "ما ناتج 78 - 20؟",
+    "choices": [
+      "58",
+      "62",
+      "56",
+      "60"
+    ],
+    "answer_index": 0,
+    "explanation": "78-20=58.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 73,
+    "type": "math",
+    "question": "ما ناتج 78 - 25؟",
+    "choices": [
+      "53",
+      "55",
+      "57",
+      "51"
+    ],
+    "answer_index": 0,
+    "explanation": "78-25=53.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 74,
+    "type": "math",
+    "question": "ما ناتج 78 - 30؟",
+    "choices": [
+      "52",
+      "48",
+      "46",
+      "50"
+    ],
+    "answer_index": 1,
+    "explanation": "78-30=48.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 75,
+    "type": "math",
+    "question": "ما ناتج 74 - 5؟",
+    "choices": [
+      "69",
+      "72",
+      "66",
+      "75"
+    ],
+    "answer_index": 0,
+    "explanation": "74-5=69.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 76,
+    "type": "math",
+    "question": "ما ناتج 74 - 10؟",
+    "choices": [
+      "61",
+      "70",
+      "67",
+      "64"
+    ],
+    "answer_index": 3,
+    "explanation": "74-10=64.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 77,
+    "type": "math",
+    "question": "ما ناتج 74 - 15؟",
+    "choices": [
+      "59",
+      "63",
+      "61",
+      "57"
+    ],
+    "answer_index": 0,
+    "explanation": "74-15=59.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 78,
+    "type": "math",
+    "question": "ما ناتج 74 - 20؟",
+    "choices": [
+      "58",
+      "52",
+      "54",
+      "56"
+    ],
+    "answer_index": 2,
+    "explanation": "74-20=54.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 79,
+    "type": "math",
+    "question": "ما ناتج 74 - 25؟",
+    "choices": [
+      "49",
+      "53",
+      "51",
+      "47"
+    ],
+    "answer_index": 0,
+    "explanation": "74-25=49.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 80,
+    "type": "math",
+    "question": "ما ناتج 74 - 30؟",
+    "choices": [
+      "44",
+      "48",
+      "46",
+      "42"
+    ],
+    "answer_index": 0,
+    "explanation": "74-30=44.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 81,
+    "type": "math",
+    "question": "ما ناتج 70 - 5؟",
+    "choices": [
+      "62",
+      "65",
+      "71",
+      "68"
+    ],
+    "answer_index": 1,
+    "explanation": "70-5=65.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 82,
+    "type": "math",
+    "question": "ما ناتج 70 - 10؟",
+    "choices": [
+      "57",
+      "60",
+      "66",
+      "63"
+    ],
+    "answer_index": 1,
+    "explanation": "70-10=60.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 83,
+    "type": "math",
+    "question": "ما ناتج 70 - 15؟",
+    "choices": [
+      "57",
+      "55",
+      "59",
+      "53"
+    ],
+    "answer_index": 1,
+    "explanation": "70-15=55.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 84,
+    "type": "math",
+    "question": "ما ناتج 70 - 20؟",
+    "choices": [
+      "52",
+      "54",
+      "48",
+      "50"
+    ],
+    "answer_index": 3,
+    "explanation": "70-20=50.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 85,
+    "type": "math",
+    "question": "ما ناتج 70 - 25؟",
+    "choices": [
+      "47",
+      "45",
+      "49",
+      "43"
+    ],
+    "answer_index": 1,
+    "explanation": "70-25=45.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 86,
+    "type": "math",
+    "question": "ما ناتج 70 - 30؟",
+    "choices": [
+      "42",
+      "38",
+      "40",
+      "44"
+    ],
+    "answer_index": 2,
+    "explanation": "70-30=40.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 87,
+    "type": "math",
+    "question": "ما ناتج 66 - 5؟",
+    "choices": [
+      "58",
+      "64",
+      "67",
+      "61"
+    ],
+    "answer_index": 3,
+    "explanation": "66-5=61.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 88,
+    "type": "math",
+    "question": "ما ناتج 66 - 10؟",
+    "choices": [
+      "58",
+      "54",
+      "60",
+      "56"
+    ],
+    "answer_index": 3,
+    "explanation": "66-10=56.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 89,
+    "type": "math",
+    "question": "ما ناتج 66 - 15؟",
+    "choices": [
+      "55",
+      "53",
+      "49",
+      "51"
+    ],
+    "answer_index": 3,
+    "explanation": "66-15=51.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 90,
+    "type": "math",
+    "question": "ما ناتج 66 - 20؟",
+    "choices": [
+      "44",
+      "48",
+      "46",
+      "50"
+    ],
+    "answer_index": 2,
+    "explanation": "66-20=46.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 91,
+    "type": "math",
+    "question": "ما ناتج 66 - 25؟",
+    "choices": [
+      "39",
+      "41",
+      "45",
+      "43"
+    ],
+    "answer_index": 1,
+    "explanation": "66-25=41.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 92,
+    "type": "math",
+    "question": "ما ناتج 66 - 30؟",
+    "choices": [
+      "38",
+      "37",
+      "36",
+      "35"
+    ],
+    "answer_index": 2,
+    "explanation": "66-30=36.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 93,
+    "type": "math",
+    "question": "ما ناتج 62 - 5؟",
+    "choices": [
+      "55",
+      "59",
+      "57",
+      "61"
+    ],
+    "answer_index": 2,
+    "explanation": "62-5=57.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 94,
+    "type": "math",
+    "question": "ما ناتج 62 - 10؟",
+    "choices": [
+      "56",
+      "52",
+      "54",
+      "50"
+    ],
+    "answer_index": 1,
+    "explanation": "62-10=52.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 95,
+    "type": "math",
+    "question": "ما ناتج 62 - 15؟",
+    "choices": [
+      "49",
+      "47",
+      "45",
+      "51"
+    ],
+    "answer_index": 1,
+    "explanation": "62-15=47.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 96,
+    "type": "math",
+    "question": "ما ناتج 62 - 20؟",
+    "choices": [
+      "44",
+      "40",
+      "42",
+      "46"
+    ],
+    "answer_index": 2,
+    "explanation": "62-20=42.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 97,
+    "type": "math",
+    "question": "ما ناتج 62 - 25؟",
+    "choices": [
+      "38",
+      "39",
+      "37",
+      "36"
+    ],
+    "answer_index": 2,
+    "explanation": "62-25=37.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 98,
+    "type": "math",
+    "question": "ما ناتج 62 - 30؟",
+    "choices": [
+      "33",
+      "31",
+      "34",
+      "32"
+    ],
+    "answer_index": 3,
+    "explanation": "62-30=32.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 99,
+    "type": "math",
+    "question": "ما ناتج 58 - 5؟",
+    "choices": [
+      "55",
+      "51",
+      "57",
+      "53"
+    ],
+    "answer_index": 3,
+    "explanation": "58-5=53.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 100,
+    "type": "math",
+    "question": "ما ناتج 58 - 10؟",
+    "choices": [
+      "52",
+      "50",
+      "46",
+      "48"
+    ],
+    "answer_index": 3,
+    "explanation": "58-10=48.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 101,
+    "type": "math",
+    "question": "ما ناتج 58 - 15؟",
+    "choices": [
+      "47",
+      "43",
+      "41",
+      "45"
+    ],
+    "answer_index": 1,
+    "explanation": "58-15=43.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 102,
+    "type": "math",
+    "question": "ما ناتج 58 - 20؟",
+    "choices": [
+      "37",
+      "40",
+      "39",
+      "38"
+    ],
+    "answer_index": 3,
+    "explanation": "58-20=38.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 103,
+    "type": "math",
+    "question": "ما ناتج 58 - 25؟",
+    "choices": [
+      "33",
+      "32",
+      "35",
+      "34"
+    ],
+    "answer_index": 0,
+    "explanation": "58-25=33.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 104,
+    "type": "math",
+    "question": "ما ناتج 58 - 30؟",
+    "choices": [
+      "29",
+      "27",
+      "30",
+      "28"
+    ],
+    "answer_index": 3,
+    "explanation": "58-30=28.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 105,
+    "type": "math",
+    "question": "ما ناتج 54 - 5؟",
+    "choices": [
+      "51",
+      "47",
+      "53",
+      "49"
+    ],
+    "answer_index": 3,
+    "explanation": "54-5=49.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 106,
+    "type": "math",
+    "question": "ما ناتج 54 - 10؟",
+    "choices": [
+      "46",
+      "48",
+      "42",
+      "44"
+    ],
+    "answer_index": 3,
+    "explanation": "54-10=44.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 107,
+    "type": "math",
+    "question": "ما ناتج 54 - 15؟",
+    "choices": [
+      "39",
+      "41",
+      "40",
+      "38"
+    ],
+    "answer_index": 0,
+    "explanation": "54-15=39.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 108,
+    "type": "math",
+    "question": "ما ناتج 54 - 20؟",
+    "choices": [
+      "35",
+      "33",
+      "34",
+      "36"
+    ],
+    "answer_index": 2,
+    "explanation": "54-20=34.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 109,
+    "type": "math",
+    "question": "ما ناتج 54 - 25؟",
+    "choices": [
+      "31",
+      "29",
+      "30",
+      "28"
+    ],
+    "answer_index": 1,
+    "explanation": "54-25=29.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 110,
+    "type": "math",
+    "question": "ما ناتج 54 - 30؟",
+    "choices": [
+      "25",
+      "23",
+      "24",
+      "26"
+    ],
+    "answer_index": 2,
+    "explanation": "54-30=24.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 111,
+    "type": "math",
+    "question": "ما ناتج 50 - 5؟",
+    "choices": [
+      "47",
+      "43",
+      "49",
+      "45"
+    ],
+    "answer_index": 3,
+    "explanation": "50-5=45.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 112,
+    "type": "math",
+    "question": "ما ناتج 50 - 10؟",
+    "choices": [
+      "40",
+      "38",
+      "44",
+      "42"
+    ],
+    "answer_index": 0,
+    "explanation": "50-10=40.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 113,
+    "type": "math",
+    "question": "ما ناتج 50 - 15؟",
+    "choices": [
+      "35",
+      "34",
+      "36",
+      "37"
+    ],
+    "answer_index": 0,
+    "explanation": "50-15=35.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 114,
+    "type": "math",
+    "question": "ما ناتج 50 - 20؟",
+    "choices": [
+      "29",
+      "30",
+      "31",
+      "32"
+    ],
+    "answer_index": 1,
+    "explanation": "50-20=30.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 115,
+    "type": "math",
+    "question": "ما ناتج 50 - 25؟",
+    "choices": [
+      "26",
+      "27",
+      "25",
+      "24"
+    ],
+    "answer_index": 2,
+    "explanation": "50-25=25.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 116,
+    "type": "math",
+    "question": "ما ناتج 50 - 30؟",
+    "choices": [
+      "20",
+      "21",
+      "19",
+      "22"
+    ],
+    "answer_index": 0,
+    "explanation": "50-30=20.",
+    "tags": [
+      "رياضيات",
+      "طرح"
+    ]
+  },
+  {
+    "id": 117,
+    "type": "math",
+    "question": "ما ناتج 6 × 6؟",
+    "choices": [
+      "38",
+      "35",
+      "36",
+      "37"
+    ],
+    "answer_index": 2,
+    "explanation": "6×6=36.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 118,
+    "type": "math",
+    "question": "ما ناتج 6 × 7؟",
+    "choices": [
+      "42",
+      "46",
+      "40",
+      "44"
+    ],
+    "answer_index": 0,
+    "explanation": "6×7=42.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 119,
+    "type": "math",
+    "question": "ما ناتج 6 × 8؟",
+    "choices": [
+      "46",
+      "52",
+      "50",
+      "48"
+    ],
+    "answer_index": 3,
+    "explanation": "6×8=48.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 120,
+    "type": "math",
+    "question": "ما ناتج 6 × 9؟",
+    "choices": [
+      "54",
+      "52",
+      "56",
+      "58"
+    ],
+    "answer_index": 0,
+    "explanation": "6×9=54.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 121,
+    "type": "math",
+    "question": "ما ناتج 6 × 10؟",
+    "choices": [
+      "60",
+      "57",
+      "63",
+      "66"
+    ],
+    "answer_index": 0,
+    "explanation": "6×10=60.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 122,
+    "type": "math",
+    "question": "ما ناتج 6 × 11؟",
+    "choices": [
+      "72",
+      "63",
+      "69",
+      "66"
+    ],
+    "answer_index": 3,
+    "explanation": "6×11=66.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 123,
+    "type": "math",
+    "question": "ما ناتج 6 × 12؟",
+    "choices": [
+      "75",
+      "72",
+      "69",
+      "78"
+    ],
+    "answer_index": 1,
+    "explanation": "6×12=72.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 124,
+    "type": "math",
+    "question": "ما ناتج 6 × 13؟",
+    "choices": [
+      "75",
+      "78",
+      "81",
+      "84"
+    ],
+    "answer_index": 1,
+    "explanation": "6×13=78.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 125,
+    "type": "math",
+    "question": "ما ناتج 6 × 14؟",
+    "choices": [
+      "84",
+      "80",
+      "88",
+      "92"
+    ],
+    "answer_index": 0,
+    "explanation": "6×14=84.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 126,
+    "type": "math",
+    "question": "ما ناتج 6 × 15؟",
+    "choices": [
+      "94",
+      "98",
+      "86",
+      "90"
+    ],
+    "answer_index": 3,
+    "explanation": "6×15=90.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 127,
+    "type": "math",
+    "question": "ما ناتج 7 × 6؟",
+    "choices": [
+      "46",
+      "40",
+      "42",
+      "44"
+    ],
+    "answer_index": 2,
+    "explanation": "7×6=42.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 128,
+    "type": "math",
+    "question": "ما ناتج 7 × 7؟",
+    "choices": [
+      "47",
+      "53",
+      "49",
+      "51"
+    ],
+    "answer_index": 2,
+    "explanation": "7×7=49.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 129,
+    "type": "math",
+    "question": "ما ناتج 7 × 8؟",
+    "choices": [
+      "56",
+      "60",
+      "58",
+      "54"
+    ],
+    "answer_index": 0,
+    "explanation": "7×8=56.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 130,
+    "type": "math",
+    "question": "ما ناتج 7 × 9؟",
+    "choices": [
+      "63",
+      "69",
+      "60",
+      "66"
+    ],
+    "answer_index": 0,
+    "explanation": "7×9=63.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 131,
+    "type": "math",
+    "question": "ما ناتج 7 × 10؟",
+    "choices": [
+      "73",
+      "67",
+      "76",
+      "70"
+    ],
+    "answer_index": 3,
+    "explanation": "7×10=70.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 132,
+    "type": "math",
+    "question": "ما ناتج 7 × 11؟",
+    "choices": [
+      "83",
+      "74",
+      "77",
+      "80"
+    ],
+    "answer_index": 2,
+    "explanation": "7×11=77.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 133,
+    "type": "math",
+    "question": "ما ناتج 7 × 12؟",
+    "choices": [
+      "88",
+      "92",
+      "84",
+      "80"
+    ],
+    "answer_index": 2,
+    "explanation": "7×12=84.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 134,
+    "type": "math",
+    "question": "ما ناتج 7 × 13؟",
+    "choices": [
+      "87",
+      "91",
+      "95",
+      "99"
+    ],
+    "answer_index": 1,
+    "explanation": "7×13=91.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 135,
+    "type": "math",
+    "question": "ما ناتج 7 × 14؟",
+    "choices": [
+      "94",
+      "98",
+      "106",
+      "102"
+    ],
+    "answer_index": 1,
+    "explanation": "7×14=98.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 136,
+    "type": "math",
+    "question": "ما ناتج 7 × 15؟",
+    "choices": [
+      "115",
+      "105",
+      "100",
+      "110"
+    ],
+    "answer_index": 1,
+    "explanation": "7×15=105.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 137,
+    "type": "math",
+    "question": "ما ناتج 8 × 6؟",
+    "choices": [
+      "50",
+      "48",
+      "52",
+      "46"
+    ],
+    "answer_index": 1,
+    "explanation": "8×6=48.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 138,
+    "type": "math",
+    "question": "ما ناتج 8 × 7؟",
+    "choices": [
+      "54",
+      "58",
+      "56",
+      "60"
+    ],
+    "answer_index": 2,
+    "explanation": "8×7=56.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 139,
+    "type": "math",
+    "question": "ما ناتج 8 × 8؟",
+    "choices": [
+      "67",
+      "70",
+      "61",
+      "64"
+    ],
+    "answer_index": 3,
+    "explanation": "8×8=64.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 140,
+    "type": "math",
+    "question": "ما ناتج 8 × 9؟",
+    "choices": [
+      "78",
+      "72",
+      "75",
+      "69"
+    ],
+    "answer_index": 1,
+    "explanation": "8×9=72.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 141,
+    "type": "math",
+    "question": "ما ناتج 8 × 10؟",
+    "choices": [
+      "80",
+      "88",
+      "76",
+      "84"
+    ],
+    "answer_index": 0,
+    "explanation": "8×10=80.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 142,
+    "type": "math",
+    "question": "ما ناتج 8 × 11؟",
+    "choices": [
+      "84",
+      "92",
+      "96",
+      "88"
+    ],
+    "answer_index": 3,
+    "explanation": "8×11=88.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 143,
+    "type": "math",
+    "question": "ما ناتج 8 × 12؟",
+    "choices": [
+      "96",
+      "100",
+      "92",
+      "104"
+    ],
+    "answer_index": 0,
+    "explanation": "8×12=96.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 144,
+    "type": "math",
+    "question": "ما ناتج 8 × 13؟",
+    "choices": [
+      "104",
+      "109",
+      "114",
+      "99"
+    ],
+    "answer_index": 0,
+    "explanation": "8×13=104.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 145,
+    "type": "math",
+    "question": "ما ناتج 8 × 14؟",
+    "choices": [
+      "107",
+      "117",
+      "112",
+      "122"
+    ],
+    "answer_index": 2,
+    "explanation": "8×14=112.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 146,
+    "type": "math",
+    "question": "ما ناتج 8 × 15؟",
+    "choices": [
+      "114",
+      "120",
+      "132",
+      "126"
+    ],
+    "answer_index": 1,
+    "explanation": "8×15=120.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 147,
+    "type": "math",
+    "question": "ما ناتج 9 × 6؟",
+    "choices": [
+      "54",
+      "56",
+      "58",
+      "52"
+    ],
+    "answer_index": 0,
+    "explanation": "9×6=54.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 148,
+    "type": "math",
+    "question": "ما ناتج 9 × 7؟",
+    "choices": [
+      "63",
+      "66",
+      "60",
+      "69"
+    ],
+    "answer_index": 0,
+    "explanation": "9×7=63.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 149,
+    "type": "math",
+    "question": "ما ناتج 9 × 8؟",
+    "choices": [
+      "72",
+      "75",
+      "69",
+      "78"
+    ],
+    "answer_index": 0,
+    "explanation": "9×8=72.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 150,
+    "type": "math",
+    "question": "ما ناتج 9 × 9؟",
+    "choices": [
+      "89",
+      "77",
+      "81",
+      "85"
+    ],
+    "answer_index": 2,
+    "explanation": "9×9=81.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 151,
+    "type": "math",
+    "question": "ما ناتج 9 × 10؟",
+    "choices": [
+      "86",
+      "98",
+      "94",
+      "90"
+    ],
+    "answer_index": 3,
+    "explanation": "9×10=90.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 152,
+    "type": "math",
+    "question": "ما ناتج 9 × 11؟",
+    "choices": [
+      "103",
+      "107",
+      "95",
+      "99"
+    ],
+    "answer_index": 3,
+    "explanation": "9×11=99.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 153,
+    "type": "math",
+    "question": "ما ناتج 9 × 12؟",
+    "choices": [
+      "113",
+      "108",
+      "103",
+      "118"
+    ],
+    "answer_index": 1,
+    "explanation": "9×12=108.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 154,
+    "type": "math",
+    "question": "ما ناتج 9 × 13؟",
+    "choices": [
+      "117",
+      "122",
+      "127",
+      "112"
+    ],
+    "answer_index": 0,
+    "explanation": "9×13=117.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 155,
+    "type": "math",
+    "question": "ما ناتج 9 × 14؟",
+    "choices": [
+      "126",
+      "132",
+      "120",
+      "138"
+    ],
+    "answer_index": 0,
+    "explanation": "9×14=126.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 156,
+    "type": "math",
+    "question": "ما ناتج 9 × 15؟",
+    "choices": [
+      "147",
+      "141",
+      "135",
+      "129"
+    ],
+    "answer_index": 2,
+    "explanation": "9×15=135.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 157,
+    "type": "math",
+    "question": "ما ناتج 10 × 6؟",
+    "choices": [
+      "66",
+      "57",
+      "60",
+      "63"
+    ],
+    "answer_index": 2,
+    "explanation": "10×6=60.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 158,
+    "type": "math",
+    "question": "ما ناتج 10 × 7؟",
+    "choices": [
+      "76",
+      "73",
+      "67",
+      "70"
+    ],
+    "answer_index": 3,
+    "explanation": "10×7=70.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 159,
+    "type": "math",
+    "question": "ما ناتج 10 × 8؟",
+    "choices": [
+      "80",
+      "84",
+      "88",
+      "76"
+    ],
+    "answer_index": 0,
+    "explanation": "10×8=80.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 160,
+    "type": "math",
+    "question": "ما ناتج 10 × 9؟",
+    "choices": [
+      "98",
+      "94",
+      "86",
+      "90"
+    ],
+    "answer_index": 3,
+    "explanation": "10×9=90.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 161,
+    "type": "math",
+    "question": "ما ناتج 10 × 10؟",
+    "choices": [
+      "110",
+      "95",
+      "100",
+      "105"
+    ],
+    "answer_index": 2,
+    "explanation": "10×10=100.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 162,
+    "type": "math",
+    "question": "ما ناتج 10 × 11؟",
+    "choices": [
+      "120",
+      "110",
+      "115",
+      "105"
+    ],
+    "answer_index": 1,
+    "explanation": "10×11=110.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 163,
+    "type": "math",
+    "question": "ما ناتج 10 × 12؟",
+    "choices": [
+      "114",
+      "126",
+      "132",
+      "120"
+    ],
+    "answer_index": 3,
+    "explanation": "10×12=120.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 164,
+    "type": "math",
+    "question": "ما ناتج 10 × 13؟",
+    "choices": [
+      "124",
+      "142",
+      "130",
+      "136"
+    ],
+    "answer_index": 2,
+    "explanation": "10×13=130.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 165,
+    "type": "math",
+    "question": "ما ناتج 10 × 14؟",
+    "choices": [
+      "154",
+      "147",
+      "140",
+      "133"
+    ],
+    "answer_index": 2,
+    "explanation": "10×14=140.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 166,
+    "type": "math",
+    "question": "ما ناتج 10 × 15؟",
+    "choices": [
+      "164",
+      "157",
+      "150",
+      "143"
+    ],
+    "answer_index": 2,
+    "explanation": "10×15=150.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 167,
+    "type": "math",
+    "question": "ما ناتج 11 × 6؟",
+    "choices": [
+      "69",
+      "66",
+      "72",
+      "63"
+    ],
+    "answer_index": 1,
+    "explanation": "11×6=66.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 168,
+    "type": "math",
+    "question": "ما ناتج 11 × 7؟",
+    "choices": [
+      "83",
+      "80",
+      "74",
+      "77"
+    ],
+    "answer_index": 3,
+    "explanation": "11×7=77.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 169,
+    "type": "math",
+    "question": "ما ناتج 11 × 8؟",
+    "choices": [
+      "88",
+      "92",
+      "84",
+      "96"
+    ],
+    "answer_index": 0,
+    "explanation": "11×8=88.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 170,
+    "type": "math",
+    "question": "ما ناتج 11 × 9؟",
+    "choices": [
+      "107",
+      "95",
+      "103",
+      "99"
+    ],
+    "answer_index": 3,
+    "explanation": "11×9=99.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 171,
+    "type": "math",
+    "question": "ما ناتج 11 × 10؟",
+    "choices": [
+      "110",
+      "105",
+      "115",
+      "120"
+    ],
+    "answer_index": 0,
+    "explanation": "11×10=110.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 172,
+    "type": "math",
+    "question": "ما ناتج 11 × 11؟",
+    "choices": [
+      "121",
+      "133",
+      "127",
+      "115"
+    ],
+    "answer_index": 0,
+    "explanation": "11×11=121.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 173,
+    "type": "math",
+    "question": "ما ناتج 11 × 12؟",
+    "choices": [
+      "138",
+      "144",
+      "126",
+      "132"
+    ],
+    "answer_index": 3,
+    "explanation": "11×12=132.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 174,
+    "type": "math",
+    "question": "ما ناتج 11 × 13؟",
+    "choices": [
+      "143",
+      "150",
+      "136",
+      "157"
+    ],
+    "answer_index": 0,
+    "explanation": "11×13=143.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 175,
+    "type": "math",
+    "question": "ما ناتج 11 × 14؟",
+    "choices": [
+      "161",
+      "168",
+      "154",
+      "147"
+    ],
+    "answer_index": 2,
+    "explanation": "11×14=154.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 176,
+    "type": "math",
+    "question": "ما ناتج 11 × 15؟",
+    "choices": [
+      "157",
+      "173",
+      "181",
+      "165"
+    ],
+    "answer_index": 3,
+    "explanation": "11×15=165.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 177,
+    "type": "math",
+    "question": "ما ناتج 12 × 6؟",
+    "choices": [
+      "72",
+      "69",
+      "75",
+      "78"
+    ],
+    "answer_index": 0,
+    "explanation": "12×6=72.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 178,
+    "type": "math",
+    "question": "ما ناتج 12 × 7؟",
+    "choices": [
+      "80",
+      "84",
+      "88",
+      "92"
+    ],
+    "answer_index": 1,
+    "explanation": "12×7=84.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 179,
+    "type": "math",
+    "question": "ما ناتج 12 × 8؟",
+    "choices": [
+      "104",
+      "96",
+      "100",
+      "92"
+    ],
+    "answer_index": 1,
+    "explanation": "12×8=96.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 180,
+    "type": "math",
+    "question": "ما ناتج 12 × 9؟",
+    "choices": [
+      "118",
+      "113",
+      "108",
+      "103"
+    ],
+    "answer_index": 2,
+    "explanation": "12×9=108.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 181,
+    "type": "math",
+    "question": "ما ناتج 12 × 10؟",
+    "choices": [
+      "120",
+      "126",
+      "114",
+      "132"
+    ],
+    "answer_index": 0,
+    "explanation": "12×10=120.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 182,
+    "type": "math",
+    "question": "ما ناتج 12 × 11؟",
+    "choices": [
+      "138",
+      "144",
+      "132",
+      "126"
+    ],
+    "answer_index": 2,
+    "explanation": "12×11=132.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 183,
+    "type": "math",
+    "question": "ما ناتج 12 × 12؟",
+    "choices": [
+      "158",
+      "137",
+      "144",
+      "151"
+    ],
+    "answer_index": 2,
+    "explanation": "12×12=144.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 184,
+    "type": "math",
+    "question": "ما ناتج 12 × 13؟",
+    "choices": [
+      "156",
+      "170",
+      "163",
+      "149"
+    ],
+    "answer_index": 0,
+    "explanation": "12×13=156.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 185,
+    "type": "math",
+    "question": "ما ناتج 12 × 14؟",
+    "choices": [
+      "168",
+      "176",
+      "184",
+      "160"
+    ],
+    "answer_index": 0,
+    "explanation": "12×14=168.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 186,
+    "type": "math",
+    "question": "ما ناتج 12 × 15؟",
+    "choices": [
+      "189",
+      "171",
+      "198",
+      "180"
+    ],
+    "answer_index": 3,
+    "explanation": "12×15=180.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 187,
+    "type": "math",
+    "question": "ما ناتج 13 × 6؟",
+    "choices": [
+      "84",
+      "78",
+      "75",
+      "81"
+    ],
+    "answer_index": 1,
+    "explanation": "13×6=78.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 188,
+    "type": "math",
+    "question": "ما ناتج 13 × 7؟",
+    "choices": [
+      "95",
+      "91",
+      "87",
+      "99"
+    ],
+    "answer_index": 1,
+    "explanation": "13×7=91.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 189,
+    "type": "math",
+    "question": "ما ناتج 13 × 8؟",
+    "choices": [
+      "99",
+      "104",
+      "109",
+      "114"
+    ],
+    "answer_index": 1,
+    "explanation": "13×8=104.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 190,
+    "type": "math",
+    "question": "ما ناتج 13 × 9؟",
+    "choices": [
+      "127",
+      "117",
+      "122",
+      "112"
+    ],
+    "answer_index": 1,
+    "explanation": "13×9=117.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 191,
+    "type": "math",
+    "question": "ما ناتج 13 × 10؟",
+    "choices": [
+      "142",
+      "130",
+      "136",
+      "124"
+    ],
+    "answer_index": 1,
+    "explanation": "13×10=130.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 192,
+    "type": "math",
+    "question": "ما ناتج 13 × 11؟",
+    "choices": [
+      "136",
+      "143",
+      "157",
+      "150"
+    ],
+    "answer_index": 1,
+    "explanation": "13×11=143.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 193,
+    "type": "math",
+    "question": "ما ناتج 13 × 12؟",
+    "choices": [
+      "170",
+      "149",
+      "163",
+      "156"
+    ],
+    "answer_index": 3,
+    "explanation": "13×12=156.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 194,
+    "type": "math",
+    "question": "ما ناتج 13 × 13؟",
+    "choices": [
+      "177",
+      "185",
+      "169",
+      "161"
+    ],
+    "answer_index": 2,
+    "explanation": "13×13=169.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 195,
+    "type": "math",
+    "question": "ما ناتج 13 × 14؟",
+    "choices": [
+      "182",
+      "191",
+      "173",
+      "200"
+    ],
+    "answer_index": 0,
+    "explanation": "13×14=182.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 196,
+    "type": "math",
+    "question": "ما ناتج 13 × 15؟",
+    "choices": [
+      "195",
+      "213",
+      "204",
+      "186"
+    ],
+    "answer_index": 0,
+    "explanation": "13×15=195.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 197,
+    "type": "math",
+    "question": "ما ناتج 14 × 6؟",
+    "choices": [
+      "80",
+      "84",
+      "92",
+      "88"
+    ],
+    "answer_index": 1,
+    "explanation": "14×6=84.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 198,
+    "type": "math",
+    "question": "ما ناتج 14 × 7؟",
+    "choices": [
+      "98",
+      "106",
+      "102",
+      "94"
+    ],
+    "answer_index": 0,
+    "explanation": "14×7=98.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 199,
+    "type": "math",
+    "question": "ما ناتج 14 × 8؟",
+    "choices": [
+      "107",
+      "117",
+      "112",
+      "122"
+    ],
+    "answer_index": 2,
+    "explanation": "14×8=112.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 200,
+    "type": "math",
+    "question": "ما ناتج 14 × 9؟",
+    "choices": [
+      "138",
+      "126",
+      "132",
+      "120"
+    ],
+    "answer_index": 1,
+    "explanation": "14×9=126.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 201,
+    "type": "math",
+    "question": "ما ناتج 14 × 10؟",
+    "choices": [
+      "154",
+      "147",
+      "140",
+      "133"
+    ],
+    "answer_index": 2,
+    "explanation": "14×10=140.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 202,
+    "type": "math",
+    "question": "ما ناتج 14 × 11؟",
+    "choices": [
+      "161",
+      "147",
+      "168",
+      "154"
+    ],
+    "answer_index": 3,
+    "explanation": "14×11=154.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 203,
+    "type": "math",
+    "question": "ما ناتج 14 × 12؟",
+    "choices": [
+      "176",
+      "168",
+      "160",
+      "184"
+    ],
+    "answer_index": 1,
+    "explanation": "14×12=168.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 204,
+    "type": "math",
+    "question": "ما ناتج 14 × 13؟",
+    "choices": [
+      "191",
+      "182",
+      "173",
+      "200"
+    ],
+    "answer_index": 1,
+    "explanation": "14×13=182.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 205,
+    "type": "math",
+    "question": "ما ناتج 14 × 14؟",
+    "choices": [
+      "196",
+      "187",
+      "205",
+      "214"
+    ],
+    "answer_index": 0,
+    "explanation": "14×14=196.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 206,
+    "type": "math",
+    "question": "ما ناتج 14 × 15؟",
+    "choices": [
+      "210",
+      "230",
+      "220",
+      "200"
+    ],
+    "answer_index": 0,
+    "explanation": "14×15=210.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 207,
+    "type": "math",
+    "question": "ما ناتج 15 × 6؟",
+    "choices": [
+      "98",
+      "90",
+      "94",
+      "86"
+    ],
+    "answer_index": 1,
+    "explanation": "15×6=90.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 208,
+    "type": "math",
+    "question": "ما ناتج 15 × 7؟",
+    "choices": [
+      "115",
+      "110",
+      "100",
+      "105"
+    ],
+    "answer_index": 3,
+    "explanation": "15×7=105.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 209,
+    "type": "math",
+    "question": "ما ناتج 15 × 8؟",
+    "choices": [
+      "120",
+      "114",
+      "126",
+      "132"
+    ],
+    "answer_index": 0,
+    "explanation": "15×8=120.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 210,
+    "type": "math",
+    "question": "ما ناتج 15 × 9؟",
+    "choices": [
+      "135",
+      "147",
+      "129",
+      "141"
+    ],
+    "answer_index": 0,
+    "explanation": "15×9=135.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 211,
+    "type": "math",
+    "question": "ما ناتج 15 × 10؟",
+    "choices": [
+      "143",
+      "150",
+      "157",
+      "164"
+    ],
+    "answer_index": 1,
+    "explanation": "15×10=150.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 212,
+    "type": "math",
+    "question": "ما ناتج 15 × 11؟",
+    "choices": [
+      "173",
+      "157",
+      "165",
+      "181"
+    ],
+    "answer_index": 2,
+    "explanation": "15×11=165.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 213,
+    "type": "math",
+    "question": "ما ناتج 15 × 12؟",
+    "choices": [
+      "180",
+      "171",
+      "189",
+      "198"
+    ],
+    "answer_index": 0,
+    "explanation": "15×12=180.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 214,
+    "type": "math",
+    "question": "ما ناتج 15 × 13؟",
+    "choices": [
+      "204",
+      "195",
+      "186",
+      "213"
+    ],
+    "answer_index": 1,
+    "explanation": "15×13=195.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 215,
+    "type": "math",
+    "question": "ما ناتج 15 × 14؟",
+    "choices": [
+      "200",
+      "220",
+      "210",
+      "230"
+    ],
+    "answer_index": 2,
+    "explanation": "15×14=210.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 216,
+    "type": "math",
+    "question": "ما ناتج 15 × 15؟",
+    "choices": [
+      "247",
+      "225",
+      "236",
+      "214"
+    ],
+    "answer_index": 1,
+    "explanation": "15×15=225.",
+    "tags": [
+      "رياضيات",
+      "ضرب"
+    ]
+  },
+  {
+    "id": 217,
+    "type": "math",
+    "question": "ما ناتج 72 ÷ 9؟",
+    "choices": [
+      "7",
+      "10",
+      "9",
+      "8"
+    ],
+    "answer_index": 3,
+    "explanation": "72÷9=8.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 218,
+    "type": "math",
+    "question": "ما ناتج 63 ÷ 9؟",
+    "choices": [
+      "7",
+      "8",
+      "9",
+      "6"
+    ],
+    "answer_index": 0,
+    "explanation": "63÷9=7.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 219,
+    "type": "math",
+    "question": "ما ناتج 189 ÷ 9؟",
+    "choices": [
+      "20",
+      "23",
+      "22",
+      "21"
+    ],
+    "answer_index": 3,
+    "explanation": "189÷9=21.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 220,
+    "type": "math",
+    "question": "ما ناتج 50 ÷ 10؟",
+    "choices": [
+      "7",
+      "6",
+      "4",
+      "5"
+    ],
+    "answer_index": 3,
+    "explanation": "50÷10=5.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 221,
+    "type": "math",
+    "question": "ما ناتج 152 ÷ 2؟",
+    "choices": [
+      "79",
+      "82",
+      "76",
+      "73"
+    ],
+    "answer_index": 2,
+    "explanation": "152÷2=76.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 222,
+    "type": "math",
+    "question": "ما ناتج 30 ÷ 6؟",
+    "choices": [
+      "6",
+      "4",
+      "7",
+      "5"
+    ],
+    "answer_index": 3,
+    "explanation": "30÷6=5.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 223,
+    "type": "math",
+    "question": "ما ناتج 132 ÷ 12؟",
+    "choices": [
+      "10",
+      "12",
+      "13",
+      "11"
+    ],
+    "answer_index": 3,
+    "explanation": "132÷12=11.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 224,
+    "type": "math",
+    "question": "ما ناتج 154 ÷ 2؟",
+    "choices": [
+      "83",
+      "80",
+      "74",
+      "77"
+    ],
+    "answer_index": 3,
+    "explanation": "154÷2=77.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 225,
+    "type": "math",
+    "question": "ما ناتج 76 ÷ 4؟",
+    "choices": [
+      "20",
+      "18",
+      "19",
+      "21"
+    ],
+    "answer_index": 2,
+    "explanation": "76÷4=19.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 226,
+    "type": "math",
+    "question": "ما ناتج 174 ÷ 3؟",
+    "choices": [
+      "62",
+      "60",
+      "58",
+      "56"
+    ],
+    "answer_index": 2,
+    "explanation": "174÷3=58.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 227,
+    "type": "math",
+    "question": "ما ناتج 186 ÷ 3؟",
+    "choices": [
+      "65",
+      "59",
+      "62",
+      "68"
+    ],
+    "answer_index": 2,
+    "explanation": "186÷3=62.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 228,
+    "type": "math",
+    "question": "ما ناتج 12 ÷ 6؟",
+    "choices": [
+      "1",
+      "4",
+      "2",
+      "3"
+    ],
+    "answer_index": 2,
+    "explanation": "12÷6=2.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 229,
+    "type": "math",
+    "question": "ما ناتج 52 ÷ 4؟",
+    "choices": [
+      "12",
+      "14",
+      "15",
+      "13"
+    ],
+    "answer_index": 3,
+    "explanation": "52÷4=13.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 230,
+    "type": "math",
+    "question": "ما ناتج 144 ÷ 2؟",
+    "choices": [
+      "69",
+      "75",
+      "78",
+      "72"
+    ],
+    "answer_index": 3,
+    "explanation": "144÷2=72.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 231,
+    "type": "math",
+    "question": "ما ناتج 36 ÷ 12؟",
+    "choices": [
+      "2",
+      "3",
+      "5",
+      "4"
+    ],
+    "answer_index": 1,
+    "explanation": "36÷12=3.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 232,
+    "type": "math",
+    "question": "ما ناتج 108 ÷ 6؟",
+    "choices": [
+      "20",
+      "18",
+      "17",
+      "19"
+    ],
+    "answer_index": 1,
+    "explanation": "108÷6=18.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 233,
+    "type": "math",
+    "question": "ما ناتج 180 ÷ 12؟",
+    "choices": [
+      "17",
+      "15",
+      "16",
+      "14"
+    ],
+    "answer_index": 1,
+    "explanation": "180÷12=15.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 234,
+    "type": "math",
+    "question": "ما ناتج 135 ÷ 9؟",
+    "choices": [
+      "14",
+      "16",
+      "17",
+      "15"
+    ],
+    "answer_index": 3,
+    "explanation": "135÷9=15.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 235,
+    "type": "math",
+    "question": "ما ناتج 121 ÷ 11؟",
+    "choices": [
+      "11",
+      "13",
+      "10",
+      "12"
+    ],
+    "answer_index": 0,
+    "explanation": "121÷11=11.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 236,
+    "type": "math",
+    "question": "ما ناتج 77 ÷ 7؟",
+    "choices": [
+      "11",
+      "10",
+      "13",
+      "12"
+    ],
+    "answer_index": 0,
+    "explanation": "77÷7=11.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 237,
+    "type": "math",
+    "question": "ما ناتج 184 ÷ 2؟",
+    "choices": [
+      "100",
+      "92",
+      "88",
+      "96"
+    ],
+    "answer_index": 1,
+    "explanation": "184÷2=92.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 238,
+    "type": "math",
+    "question": "ما ناتج 24 ÷ 3؟",
+    "choices": [
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
+    "answer_index": 1,
+    "explanation": "24÷3=8.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 239,
+    "type": "math",
+    "question": "ما ناتج 36 ÷ 9؟",
+    "choices": [
+      "4",
+      "3",
+      "6",
+      "5"
+    ],
+    "answer_index": 0,
+    "explanation": "36÷9=4.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 240,
+    "type": "math",
+    "question": "ما ناتج 120 ÷ 5؟",
+    "choices": [
+      "23",
+      "26",
+      "25",
+      "24"
+    ],
+    "answer_index": 3,
+    "explanation": "120÷5=24.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 241,
+    "type": "math",
+    "question": "ما ناتج 42 ÷ 7؟",
+    "choices": [
+      "5",
+      "6",
+      "8",
+      "7"
+    ],
+    "answer_index": 1,
+    "explanation": "42÷7=6.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 242,
+    "type": "math",
+    "question": "ما ناتج 190 ÷ 10؟",
+    "choices": [
+      "18",
+      "21",
+      "20",
+      "19"
+    ],
+    "answer_index": 3,
+    "explanation": "190÷10=19.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 243,
+    "type": "math",
+    "question": "ما ناتج 126 ÷ 6؟",
+    "choices": [
+      "23",
+      "21",
+      "20",
+      "22"
+    ],
+    "answer_index": 1,
+    "explanation": "126÷6=21.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 244,
+    "type": "math",
+    "question": "ما ناتج 114 ÷ 3؟",
+    "choices": [
+      "40",
+      "38",
+      "37",
+      "39"
+    ],
+    "answer_index": 1,
+    "explanation": "114÷3=38.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 245,
+    "type": "math",
+    "question": "ما ناتج 18 ÷ 2؟",
+    "choices": [
+      "10",
+      "11",
+      "9",
+      "8"
+    ],
+    "answer_index": 2,
+    "explanation": "18÷2=9.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 246,
+    "type": "math",
+    "question": "ما ناتج 105 ÷ 7؟",
+    "choices": [
+      "14",
+      "15",
+      "16",
+      "17"
+    ],
+    "answer_index": 1,
+    "explanation": "105÷7=15.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 247,
+    "type": "math",
+    "question": "ما ناتج 48 ÷ 12؟",
+    "choices": [
+      "6",
+      "4",
+      "3",
+      "5"
+    ],
+    "answer_index": 1,
+    "explanation": "48÷12=4.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 248,
+    "type": "math",
+    "question": "ما ناتج 98 ÷ 7؟",
+    "choices": [
+      "14",
+      "15",
+      "13",
+      "16"
+    ],
+    "answer_index": 0,
+    "explanation": "98÷7=14.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 249,
+    "type": "math",
+    "question": "ما ناتج 20 ÷ 2؟",
+    "choices": [
+      "9",
+      "11",
+      "10",
+      "12"
+    ],
+    "answer_index": 2,
+    "explanation": "20÷2=10.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 250,
+    "type": "math",
+    "question": "ما ناتج 60 ÷ 4؟",
+    "choices": [
+      "16",
+      "17",
+      "14",
+      "15"
+    ],
+    "answer_index": 3,
+    "explanation": "60÷4=15.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 251,
+    "type": "math",
+    "question": "ما ناتج 12 ÷ 12؟",
+    "choices": [
+      "1",
+      "3",
+      "2",
+      "0"
+    ],
+    "answer_index": 0,
+    "explanation": "12÷12=1.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 252,
+    "type": "math",
+    "question": "ما ناتج 66 ÷ 2؟",
+    "choices": [
+      "34",
+      "33",
+      "32",
+      "35"
+    ],
+    "answer_index": 1,
+    "explanation": "66÷2=33.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 253,
+    "type": "math",
+    "question": "ما ناتج 90 ÷ 2؟",
+    "choices": [
+      "47",
+      "49",
+      "45",
+      "43"
+    ],
+    "answer_index": 2,
+    "explanation": "90÷2=45.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 254,
+    "type": "math",
+    "question": "ما ناتج 90 ÷ 9؟",
+    "choices": [
+      "9",
+      "10",
+      "11",
+      "12"
+    ],
+    "answer_index": 1,
+    "explanation": "90÷9=10.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 255,
+    "type": "math",
+    "question": "ما ناتج 140 ÷ 10؟",
+    "choices": [
+      "13",
+      "14",
+      "16",
+      "15"
+    ],
+    "answer_index": 1,
+    "explanation": "140÷10=14.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 256,
+    "type": "math",
+    "question": "ما ناتج 192 ÷ 4؟",
+    "choices": [
+      "52",
+      "50",
+      "46",
+      "48"
+    ],
+    "answer_index": 3,
+    "explanation": "192÷4=48.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 257,
+    "type": "math",
+    "question": "ما ناتج 75 ÷ 3؟",
+    "choices": [
+      "25",
+      "26",
+      "24",
+      "27"
+    ],
+    "answer_index": 0,
+    "explanation": "75÷3=25.",
+    "tags": [
+      "رياضيات",
+      "قسمة"
+    ]
+  },
+  {
+    "id": 258,
+    "type": "math",
+    "question": "ما ناتج 135 ÷ 5؟",
+    "c
