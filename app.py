@@ -1,100 +1,91 @@
 import os
 import json
-import random
 import logging
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, MessageHandler, Filters, CommandHandler
+from telegram import Bot, Update, InputFile, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
 import requests
 
-# إعداد اللوقز
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+# إعداد اللوج
+logging.basicConfig(level=logging.INFO)
 
-# جلب المتغيرات من Render
+# أخذ التوكن والمفاتيح من Environment
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 AI_API_KEY = os.getenv("AI_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
+# Flask
 app = Flask(__name__)
 
-# تحميل بنك الأسئلة من ملف data.json
-with open("data.json", "r", encoding="utf-8") as f:
-    QUESTIONS = json.load(f)
+# Dispatcher
+dispatcher = Dispatcher(bot, None, workers=0)
 
+# تحميل بنك الأسئلة
+QUESTIONS_FILE = "data.json"
+if os.path.exists(QUESTIONS_FILE):
+    with open(QUESTIONS_FILE, "r", encoding="utf-8") as f:
+        QUESTIONS = json.load(f)
+else:
+    QUESTIONS = []
 
-# دالة لاختيار سؤال عشوائي
-def get_random_question():
-    return random.choice(QUESTIONS)
-
-
-# دالة للرد من الذكاء الاصطناعي
+# دالة سؤال الذكاء الاصطناعي
 def ask_ai(prompt: str) -> str:
     try:
-        url = "https://api.openai.com/v1/responses"
-        headers = {
-            "Authorization": f"Bearer {AI_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        payload = {"model": AI_MODEL, "input": prompt}
-
-        response = requests.post(url, headers=headers, json=payload)
-        data = response.json()
-
-        if "output" in data:
-            return data["output"][0]["content"][0]["text"]
-        elif "choices" in data:
-            return data["choices"][0]["message"]["content"]
-        else:
-            return "⚠️ تعذّر الحصول على رد من الذكاء الاصطناعي."
+        r = requests.post(
+            "https://api.openai.com/v1/responses",
+            headers={"Authorization": f"Bearer {AI_API_KEY}"},
+            json={"model": AI_MODEL, "input": prompt},
+            timeout=30
+        )
+        data = r.json()
+        return data["output"][0]["content"][0]["text"]
     except Exception as e:
-        logging.error(f"AI Error: {e}")
-        return "⚠️ خطأ في الاتصال بالذكاء الاصطناعي."
+        return f"⚠️ تعذّر الاتصال بالذكاء الاصطناعي: {e}"
 
+# أوامر
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "مرحباً 👋\nهذا بوت قياس.\n"
+        "أرسل: 'سؤال' لأخذ سؤال عشوائي من بنك الأسئلة.\n"
+        "أو أرسل أي استفسار لأسأله الذكاء الاصطناعي 🤖."
+    )
 
-# أوامر البوت
-def start(update: Update, context):
-    update.message.reply_text("👋 أهلاً! أرسل 'سؤال' للحصول على سؤال عشوائي، أو اكتب أي شيء للتحدث مع الذكاء الاصطناعي.")
-
-
-def question(update: Update, context):
-    q = get_random_question()
-    text = f"📘 سؤال:\n{q['question']}\n\nالاختيارات:\n"
-    for i, choice in enumerate(q["choices"], 1):
-        text += f"{i}. {choice}\n"
-    update.message.reply_text(text)
-
-
-def handle_message(update: Update, context):
-    user_text = update.message.text
-    if "سؤال" in user_text:
-        return question(update, context)
+def ask_question(update: Update, context: CallbackContext):
+    import random
+    if QUESTIONS:
+        q = random.choice(QUESTIONS)
+        text = f"❓ {q['question']}\n\nالخيارات:\n"
+        for i, c in enumerate(q["choices"], start=1):
+            text += f"{i}. {c}\n"
+        update.message.reply_text(text)
     else:
-        ai_reply = ask_ai(user_text)
-        update.message.reply_text(ai_reply)
+        update.message.reply_text("⚠️ لا يوجد أسئلة حالياً في البنك.")
 
+def handle_message(update: Update, context: CallbackContext):
+    text = update.message.text
+    if text.strip() == "سؤال":
+        ask_question(update, context)
+    else:
+        reply = ask_ai(text)
+        update.message.reply_text(reply)
 
-# إعداد الديسباتشر
-dispatcher = Dispatcher(bot, None, workers=0)
+# ربط الهاندلرز
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-
-# Webhook من Render
+# Webhook route
 @app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
-
 @app.route("/")
-def home():
-    return "✅ Bot is running on Render!"
+def index():
+    return "✅ Bot is running!"
 
-
+# تشغيل السيرفر
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
