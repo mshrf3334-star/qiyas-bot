@@ -1,38 +1,24 @@
-import os
 from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler
+import os
+import requests
 
-# إنشاء تطبيق Flask
 app = Flask(__name__)
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 
-# قراءة التوكن من متغير البيئة
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-bot = Bot(token=TOKEN)
-
-# إنشاء Dispatcher
-dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
-
-# دالة أمر /start
-def start(update, context):
-    update.message.reply_text("🚀 البوت شغال تمام!")
-
-# إضافة الأمر للديسباتشر
-dispatcher.add_handler(CommandHandler("start", start))
-
-# راوت رئيسي للتجربة
 @app.route('/')
-def index():
-    return "✅ البوت يعمل على Render!"
+def home():
+    return "Bot is running!"
 
-# راوت خاص بالويب هوك
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
-    return "ok"
+    update = request.get_json()
+    if "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+        reply = f"أهلاً 👋 استلمت رسالتك: {text}"
+        requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                      json={"chat_id": chat_id, "text": reply})
+    return {"ok": True}
 
-# تشغيل التطبيق
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
