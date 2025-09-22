@@ -1,37 +1,38 @@
 import os
 from flask import Flask, request
 from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
+from telegram.ext import Dispatcher, CommandHandler
 
-# قراءة التوكن من المتغيرات
+# إنشاء تطبيق Flask
+app = Flask(__name__)
+
+# قراءة التوكن من متغير البيئة
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = Bot(token=TOKEN)
 
-app = Flask(__name__)
+# إنشاء Dispatcher
+dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
 
-# أوامر البوت
+# دالة أمر /start
 def start(update, context):
-    update.message.reply_text("🚀 أهلاً بك في بوت القدرات (Qiyas)!")
+    update.message.reply_text("🚀 البوت شغال تمام!")
 
-def echo(update, context):
-    update.message.reply_text(f"📩 إرسالك: {update.message.text}")
-
-# Dispatcher
-dispatcher = Dispatcher(bot, None, workers=0)
+# إضافة الأمر للديسباتشر
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
-# Webhook
-@app.route(f"/{TOKEN}", methods=["POST"])
+# راوت رئيسي للتجربة
+@app.route('/')
+def index():
+    return "✅ البوت يعمل على Render!"
+
+# راوت خاص بالويب هوك
+@app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return "ok"
 
-@app.route("/")
-def home():
-    return "🤖 Qiyas Bot is running!"
-
+# تشغيل التطبيق
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
