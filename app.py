@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import random
+import requests
 from flask import Flask, request
 
 # Telegram Bot API v13
@@ -17,6 +18,9 @@ log = logging.getLogger("qiyas-bot")
 
 # ---------------- ENV ----------------
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.getenv("AI_API_KEY")            # ضع هنا مفتاح OpenAI (مثلاً sk-...)
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini") # اختياري: غيّره لو تبغى موديل آخر
+
 if not TOKEN:
     raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات على Render")
 
@@ -31,12 +35,13 @@ with open(DATA_FILE, "r", encoding="utf-8") as f:
 
 # ---------------- Keyboards ----------------
 RESTART_TEXT = "🔁 إعادة الاختبار"
+ASK_QIYAS_TEXT = "❓ اسأل قياس"
 TIMES_MENU   = ["5 أسئلة", "10 أسئلة", "20 سؤال"]
 TIMES_QUIT   = "⏹️ إنهاء اختبار الضرب"
 
 MAIN_MENU_KB = ReplyKeyboardMarkup(
     [
-        ["🧠 اختبار القدرات"],
+        ["🧠 اختبار القدرات", ASK_QIYAS_TEXT],
         ["📊 نتيجتي", "🧮 اختبار جدول الضرب"]
     ],
     resize_keyboard=True
@@ -48,10 +53,12 @@ times_kb = ReplyKeyboardMarkup([[TIMES_QUIT]], resize_keyboard=True)
 # ---------------- State ----------------
 # اختيار من متعدد: user_id -> { pool, index, correct, wrong, type }
 user_progress = {}
-# وضعية عامة: user_id -> "mcq" | "times" | None
+# وضعية عامة لكل مستخدم: user_id -> "mcq" | "times" | "ask" | None
 mode = {}
 # حالة اختبار الضرب: user_id -> {"q":..,"correct":..,"a":..,"b":..,"answer":..,"total":..,"choosing":True/False}
 times_state = {}
+# وضعية السؤال للـ AI: user_id -> True (ينتظر سؤال)
+ask_mode = set()
 
 # ---------------- Helpers (MCQ) ----------------
 def make_pool(qtype: str | None):
@@ -116,6 +123,55 @@ def times_next_question(update: Update, user_id: int):
         reply_markup=times_kb
     )
 
+# ---------------- AI helper ----------------
+def ask_qiyas_ai(user_prompt: str) -> str:
+    """
+    يرسل السؤال لـ OpenAI Responses API ويرجع نص الإجابة عربي مختصر.
+    يتوقع AI_API_KEY موجود. يعالج الأخطاء برفق.
+    """
+    if not AI_API_KEY:
+        return "⚠️ خدمة الذكاء الاصطناعي غير مفعّلة. ضع AI_API_KEY في متغيرات البيئة."
+    # نحدّد تعليمات واضحة للموديل: إجابة قصيرة مفيدة لطالب قدرات
+    system_instruction = (
+        "أنت مساعد لشرح أسئلة اختبار القدرات (الكمي واللفظي). "
+        "جاوب بالعربية المبسطة، بإيجاز (2–4 جمل)، واذكر النتيجة أو الفكرة الأساسية. "
+        "لا تزوّد تلميحاتٍ تؤدي لإعطاء حلولٍ كاملة لا تساعد على التعلم."
+    )
+    try:
+        payload = {
+            "model": AI_MODEL,
+            "input": f"{system_instruction}\n\nالسؤال: {user_prompt}"
+        }
+        headers = {
+            "Authorization": f"Bearer {AI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        resp = requests.post("https://api.openai.com/v1/responses", json=payload, headers=headers, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        # حاول قراءة النص من المسار المتوقع
+        # شكل الاستجابة: data["output"][0]["content"][0]["text"] أو data["output_text"]
+        if "output_text" in data:
+            return data["output_text"].strip()
+        out = data.get("output") or data.get("choices")
+        if out and isinstance(out, list):
+            # محاولة استخراج نصوص متاحة
+            first = out[0]
+            # بعض الأحيان المحتوى في first["content"][0]["text"]
+            if isinstance(first, dict):
+                content = first.get("content")
+                if isinstance(content, list) and len(content) > 0 and isinstance(content[0], dict):
+                    txt = content[0].get("text")
+                    if txt:
+                        return txt.strip()
+                # fallback to first.get("text")
+                if "text" in first and first["text"]:
+                    return first["text"].strip()
+        return "⚠️ لم يصل رد واضح من خدمة الذكاء الاصطناعي."
+    except Exception as e:
+        log.exception("AI request error")
+        return f"⚠️ حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: {str(e)}"
+
 # ---------------- Commands ----------------
 def start(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
@@ -167,6 +223,15 @@ def handle_text(update: Update, context: CallbackContext):
         times_state[user_id] = {"choosing": True}
         update.message.reply_text("اختر عدد الأسئلة:", reply_markup=times_choose_kb)
         return
+    if text == ASK_QIYAS_TEXT:
+        # بدء وضعية السؤال للـ AI
+        mode[user_id] = "ask"
+        ask_mode.add(user_id)
+        update.message.reply_text(
+            "📩 اكتب سؤالك عن اختبار القدرات الآن (باللغة العربية). سأرد بإيجاز مفيد للطالب.",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return
 
     # إعادة اختبار MCQ
     if text == RESTART_TEXT:
@@ -211,6 +276,17 @@ def handle_text(update: Update, context: CallbackContext):
         else:
             update.message.reply_text(f"❌ خطأ. الصحيح: {st['answer']}")
         times_next_question(update, user_id)
+        return
+
+    # وضعية اسأل قياس (AI)
+    if mode.get(user_id) == "ask" and user_id in ask_mode:
+        question_text = text
+        update.message.reply_text("⏳ أرسل سؤالك للذكاء الاصطناعي...")  # feedback سريع
+        reply = ask_qiyas_ai(question_text)
+        # أخرج المستخدم من وضع السؤال بعد إجابة واحدة - يمكن تغييره إذا أردت جلسة أطول
+        ask_mode.discard(user_id)
+        mode[user_id] = None
+        update.message.reply_text(reply, reply_markup=MAIN_MENU_KB)
         return
 
     # وضعية MCQ
