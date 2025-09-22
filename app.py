@@ -1,155 +1,166 @@
 import os
 import json
 import random
-from flask import Flask, request
-import requests
+from typing import Dict, Any
 
+from flask import Flask, request
+from telegram import Bot, Update
+from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
+
+# -----------------------------
+# إعدادات عامة
+# -----------------------------
 app = Flask(__name__)
 
-# ===== إعدادات البيئة =====
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-AI_API_KEY = os.getenv("AI_API_KEY")
-AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+if not TOKEN:
+    raise RuntimeError("TELEGRAM_BOT_TOKEN غير مضبوط في المتغيرات")
 
-TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+bot = Bot(token=TOKEN)
 
-# ===== تحميل بنك الأسئلة =====
-QUESTIONS = []
-try:
-    with open("data/qiyas_questions.json", "r", encoding="utf-8") as f:
-        QUESTIONS = json.load(f)
-except Exception as e:
-    print("⚠️ لم يتم تحميل بنك الأسئلة:", e)
+# تحميل بنك الأسئلة من ملف واحد في جذر المشروع
+with open("data.json", "r", encoding="utf-8") as f:
+    QUESTIONS = json.load(f)
 
-# حالة الجلسات لكل محادثة (داخل الذاكرة)
-SESSION = {}  # { chat_id: {"mode": "quiz"|"ai", "q": {..}, "awaiting": True, "correct": int, "total": int} }
+# حالة المستخدمين: نخزن آخر سؤال أرسلناه لكل مستخدم
+user_state: Dict[int, Dict[str, Any]] = {}
 
-def send_message(chat_id, text):
-    if len(text) > 4096:
-        text = text[:4090] + " ..."
-    requests.post(f"{TELEGRAM_URL}/sendMessage", json={"chat_id": chat_id, "text": text})
+# مِزاد Dispatcher
+dp = Dispatcher(bot, None, workers=0, use_context=True)
 
-def format_question(q):
-    lines = [f"سؤال #{q.get('id')}: {q['question']}"]
-    for i, ch in enumerate(q["choices"]):
-        lines.append(ch)
-    lines.append("\nأرسل حرف الاختيار: أ أو ب أو ج أو د")
-    return "\n".join(lines)
+# -----------------------------
+# أدوات مساعدة
+# -----------------------------
+LETTER_MAP_AR = {"أ": 0, "ا": 0, "ب": 1, "ج": 2, "د": 3}
+LETTER_MAP_EN = {"A": 0, "B": 1, "C": 2, "D": 3}
 
-def pick_question():
-    return random.choice(QUESTIONS) if QUESTIONS else None
+def choice_index_from_text(text: str):
+    """يحاول يفهم إدخال المستخدم ويعيد رقم الخيار 0..3 أو None"""
+    if not text:
+        return None
+    t = text.strip().upper()
 
-def letter_to_index(letter):
-    letter = letter.strip().replace(" ", "")
-    mapping = {"أ":0, "ا":0, "ب":1, "ج":2, "د":3, "A":0, "B":1, "C":2, "D":3}
-    return mapping.get(letter, None)
+    # أرقام 1..4
+    if t in {"1", "2", "3", "4"}:
+        return int(t) - 1
 
-def ask_ai(prompt):
-    if not AI_API_KEY:
-        return "⚠️ مفتاح الذكاء الاصطناعي غير مضبوط (AI_API_KEY)."
-    headers = {"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": AI_MODEL,
-        "messages": [
-            {"role": "system", "content": "أنت مساعد ذكي لاختبارات القدرات (Qiyas). جاوب بالعربية باختصار ووضوح."},
-            {"role": "user", "content": prompt}
-        ]
+    # حروف عربية
+    t_ar = t.replace("إ", "ا").replace("أ", "ا").replace("ٱ", "ا")
+    if t_ar and t_ar[0] in LETTER_MAP_AR:
+        return LETTER_MAP_AR[t_ar[0]]
+
+    # حروف إنجليزية
+    if t and t[0] in LETTER_MAP_EN:
+        return LETTER_MAP_EN[t[0]]
+
+    return None
+
+def send_random_question(update: Update, context: CallbackContext):
+    """يرسل سؤال عشوائي ويخزن حالته للمستخدم"""
+    chat_id = update.effective_chat.id
+    q = random.choice(QUESTIONS)
+
+    # صياغة الرسالة
+    msg = f"❓ {q['question']}\n\n"
+    msg += "اختر إجابة واحدة:\n"
+    # نعرض الخيارات بشكل مرتب 1..4 مع الحروف العربية
+    labels = ["أ", "ب", "ج", "د"]
+    for i, choice in enumerate(q["choices"]):
+        # لو الخيارات نفسها فيها (أ) نعرض كما هي
+        if "أ)" in choice or "ب)" in choice or "ج)" in choice or "د)" in choice:
+            msg += f"- {choice}\n"
+        else:
+            msg += f"- {labels[i]}) {choice}\n"
+
+    msg += "\nأرسل رقم الخيار (1-4) أو الحرف (أ/ب/ج/د)."
+
+    # حفظ الحالة
+    user_state[chat_id] = {
+        "qid": q.get("id"),
+        "answer_index": int(q["answer_index"]),
+        "explanation": q.get("explanation", ""),
+        "question": q,
     }
-    try:
-        r = requests.post(OPENAI_URL, headers=headers, json=payload, timeout=25)
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].strip()
-        else:
-            print("OpenAI error:", r.status_code, r.text)
-            return "⚠️ تعذّر الاتصال بالذكاء الاصطناعي. تأكد من AI_API_KEY و AI_MODEL."
-    except Exception as e:
-        print("OpenAI exception:", e)
-        return "⚠️ صار خطأ أثناء الاتصال بالذكاء الاصطناعي."
 
-@app.route("/", methods=["GET"])
-def home():
-    return "🤖 Qiyas Bot is running with Quiz + AI"
+    update.message.reply_text(msg)
 
-@app.route(f"/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
-def webhook():
-    update = request.get_json(silent=True) or {}
-    msg = update.get("message") or update.get("edited_message")
-    if not msg:
-        return "no message", 200
+# -----------------------------
+# Handlers
+# -----------------------------
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "👋 أهلاً بك في بوت قياس!\n"
+        "سأعطيك سؤالاً عشوائياً مع خيارات.\n"
+        "أرسل رقم الخيار (1-4) أو الحرف (أ/ب/ج/د)، وبعد التقييم أرسلك سؤال جديد.\n"
+        "موفق 🤍"
+    )
+    send_random_question(update, context)
 
-    chat_id = msg["chat"]["id"]
-    text = (msg.get("text") or "").strip()
+def handle_message(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    text = update.message.text or ""
 
-    # إنشاء جلسة افتراضية
-    if chat_id not in SESSION:
-        SESSION[chat_id] = {"mode": "ai", "q": None, "awaiting": False, "correct": 0, "total": 0}
+    # إذا لا يوجد حالة سابقة، أرسل سؤال جديد
+    if chat_id not in user_state:
+        send_random_question(update, context)
+        return
 
-    # أوامر سريعة
-    if text.lower() in ["/start", "start", "ابدأ", "بداية"]:
-        send_message(chat_id,
-            "مرحبًا بك في بوت القدرات ✅\n\n"
-            "الأوامر:\n"
-            "• اكتب: اسئلة قدرات — للدخول في وضع المسابقة\n"
-            "• اكتب: التالي — لسؤال جديد\n"
-            "• اكتب: خروج — للخروج من وضع المسابقة\n"
-            "• أو اسأل أي سؤال وسأحاول مساعدتك بالذكاء الاصطناعي"
+    state = user_state[chat_id]
+    correct_index = state["answer_index"]
+    q = state["question"]
+
+    # حاول نفهم اختيار المستخدم
+    idx = choice_index_from_text(text)
+
+    # إن ما قدرنا نفهم، جرّبه كنص كامل يطابق أحد الخيارات
+    if idx is None:
+        norm = text.strip()
+        for i, ch in enumerate(q["choices"]):
+            if norm == ch or norm in ch:
+                idx = i
+                break
+
+    # إذا ما زال None نطلب منه اختيار صحيح
+    if idx is None or idx not in (0, 1, 2, 3):
+        update.message.reply_text("❗️ أرسل رقم 1-4 أو حرف (أ/ب/ج/د) فقط.")
+        return
+
+    # قيّم الإجابة
+    if idx == correct_index:
+        reply = "✅ إجابة صحيحة!"
+    else:
+        labels = ["أ", "ب", "ج", "د"]
+        reply = (
+            "❌ إجابة غير صحيحة.\n"
+            f"الصحيح: {labels[correct_index]}) {q['choices'][correct_index]}"
         )
-        return "ok", 200
 
-    if text in ["خروج", "انهاء", "إنهاء", "exit"]:
-        SESSION[chat_id] = {"mode": "ai", "q": None, "awaiting": False, "correct": 0, "total": 0}
-        send_message(chat_id, "تم الخروج من وضع المسابقة. أرسل أي سؤال وسأساعدك.")
-        return "ok", 200
+    # أضف الشرح لو موجود
+    exp = state.get("explanation", "")
+    if exp:
+        reply += f"\n\nالشرح: {exp}"
 
-    # الدخول لوضع المسابقة
-    if text in ["اسئلة قدرات", "أسئلة قدرات", "مسابقة", "سؤال", "اختبار"]:
-        SESSION[chat_id]["mode"] = "quiz"
-        q = pick_question()
-        if not q:
-            send_message(chat_id, "لا يوجد بنك أسئلة حالياً. أضف أسئلة في data/qiyas_questions.json.")
-            return "ok", 200
-        SESSION[chat_id]["q"] = q
-        SESSION[chat_id]["awaiting"] = True
-        SESSION[chat_id]["total"] += 1
-        send_message(chat_id, format_question(q))
-        return "ok", 200
+    update.message.reply_text(reply)
 
-    # سؤال جديد أثناء وضع المسابقة
-    if text in ["التالي", "سؤال جديد"] and SESSION[chat_id]["mode"] == "quiz":
-        q = pick_question()
-        if not q:
-            send_message(chat_id, "لا يوجد بنك أسئلة كافٍ حالياً.")
-            return "ok", 200
-        SESSION[chat_id]["q"] = q
-        SESSION[chat_id]["awaiting"] = True
-        SESSION[chat_id]["total"] += 1
-        send_message(chat_id, format_question(q))
-        return "ok", 200
+    # أرسل سؤال جديد مباشرة
+    send_random_question(update, context)
 
-    # التقييم أثناء وضع المسابقة
-    if SESSION[chat_id]["mode"] == "quiz" and SESSION[chat_id]["awaiting"]:
-        idx = letter_to_index(text)
-        q = SESSION[chat_id]["q"]
-        if idx is None:
-            send_message(chat_id, "رجاءً أرسل حرف الاختيار: أ / ب / ج / د")
-            return "ok", 200
-        correct = q["answer_index"]
-        if idx == correct:
-            SESSION[chat_id]["correct"] += 1
-            send_message(chat_id, "✅ إجابة صحيحة!\n" + f"التفسير: {q['explanation']}\n\nاكتب: التالي — لسؤال جديد")
-        else:
-            send_message(chat_id, "❌ إجابة غير صحيحة.\n" +
-                         f"الإجابة الصحيحة هي: {['أ','ب','ج','د'][correct]} \n" +
-                         f"التفسير: {q['explanation']}\n\nاكتب: التالي — لسؤال جديد")
-        SESSION[chat_id]["awaiting"] = False
-        return "ok", 200
+# ربط الهاندلرز
+dp.add_handler(CommandHandler("start", start))
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-    # افتراضيًا: ذكاء اصطناعي
-    reply = ask_ai(text) if text else "أرسل نصًا وسأساعدك."
-    send_message(chat_id, reply)
+# -----------------------------
+# Flask Routes
+# -----------------------------
+@app.route(f"/{TOKEN}", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dp.process_update(update)
     return "ok", 200
 
+@app.route("/")
+def index():
+    return "بوت قياس شغال ✅", 200
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
