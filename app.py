@@ -1,226 +1,257 @@
 import os
 import json
 import logging
-import requests
+import random
 from flask import Flask, request
+
+# Telegram Bot API v13
 from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# إعداد اللوجات
+# ---------------- Logging ----------------
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
+    level=logging.INFO,
 )
+log = logging.getLogger("qiyas-bot")
 
-# مفاتيح البيئة
+# ---------------- ENV ----------------
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-AI_API_KEY = os.getenv("AI_API_KEY")
-AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-4o-mini")
-
 if not TOKEN:
-    raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
+    raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات على Render")
 
 bot = Bot(token=TOKEN)
 app = Flask(__name__)
-dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
+dispatcher = Dispatcher(bot, None, workers=0)
 
-# تحميل بنك الأسئلة
-with open("data.json", "r", encoding="utf-8") as f:
+# ---------------- Load Questions ----------------
+DATA_FILE = "data.json"
+with open(DATA_FILE, "r", encoding="utf-8") as f:
     QUESTIONS = json.load(f)
 
-# تقدم المستخدمين + وضعية "اسأل قياس"
-user_progress = {}     # user_id -> {index, correct, wrong}
-ask_mode = set()       # المستخدمين في وضعية "اسأل قياس"
+# ---------------- Keyboards ----------------
+RESTART_TEXT = "🔁 إعادة الاختبار"
+TIMES_MENU   = ["5 أسئلة", "10 أسئلة", "20 سؤال"]
+TIMES_QUIT   = "⏹️ إنهاء اختبار الضرب"
 
-# القائمة الرئيسية
 MAIN_MENU_KB = ReplyKeyboardMarkup(
     [
         ["🧠 اختبار القدرات"],
-        ["📊 نتيجتي", "❓ اسأل قياس"]
+        ["📊 نتيجتي", "🧮 اختبار جدول الضرب"]
     ],
     resize_keyboard=True
 )
-
-RESTART_TEXT = "🔁 إعادة الاختبار"
 restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True, one_time_keyboard=True)
+times_choose_kb = ReplyKeyboardMarkup([TIMES_MENU, [TIMES_QUIT]], resize_keyboard=True)
+times_kb = ReplyKeyboardMarkup([[TIMES_QUIT]], resize_keyboard=True)
 
-# =========================
-# دوال مساعدة
-# =========================
-def reset_user(user_id: int):
-    user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
+# ---------------- State ----------------
+# اختيار من متعدد: user_id -> { pool, index, correct, wrong, type }
+user_progress = {}
+# وضعية عامة: user_id -> "mcq" | "times" | None
+mode = {}
+# حالة اختبار الضرب: user_id -> {"q":..,"correct":..,"a":..,"b":..,"answer":..,"total":..,"choosing":True/False}
+times_state = {}
 
-def send_question(update: Update, context: CallbackContext, q_index: int, user_id: int):
-    total_q = len(QUESTIONS)
-    if q_index >= total_q:
-        correct = user_progress[user_id]["correct"]
-        wrong   = user_progress[user_id]["wrong"]
-        total   = correct + wrong
-        score   = round((correct / total) * 100, 2) if total > 0 else 0.0
+# ---------------- Helpers (MCQ) ----------------
+def make_pool(qtype: str | None):
+    if not qtype or qtype.lower() == "all":
+        return QUESTIONS[:], "all"
+    qtype = qtype.lower()
+    pool = [q for q in QUESTIONS if str(q.get("type","")).lower() == qtype]
+    return (pool if pool else QUESTIONS[:]), (qtype if pool else "all")
+
+def reset_user(user_id: int, qtype: str | None = None):
+    pool, qtype_final = make_pool(qtype)
+    user_progress[user_id] = {"pool": pool, "index": 0, "correct": 0, "wrong": 0, "type": qtype_final}
+
+def send_mcq_question(update: Update, context: CallbackContext, user_id: int):
+    st = user_progress[user_id]
+    pool = st["pool"]
+    idx  = st["index"]
+    total_q = len(pool)
+
+    if idx >= total_q:
+        correct = st["correct"]; wrong = st["wrong"]
+        total = correct + wrong
+        score = round((correct / total) * 100, 2) if total > 0 else 0.0
+        kind = st["type"]
         update.message.reply_text(
-            f"🎉 خلصت الاختبار!\n\n"
+            f"🎉 خلّصت اختبار ({'الكل' if kind=='all' else kind}).\n\n"
             f"✅ صحيحة: {correct}\n"
             f"❌ خاطئة: {wrong}\n"
             f"📊 الدرجة: {score}%",
-            reply_markup=restart_kb
+            reply_markup=restart_kb,
         )
         return
 
-    q = QUESTIONS[q_index]
-    text = f"❓ السؤال {q_index+1}/{total_q}\n\n{q['question']}\n\n"
-    for i, choice in enumerate(q.get("choices", []), start=1):
+    q = pool[idx]
+    text = f"❓ السؤال {idx+1}/{total_q}\n\n{q['question']}\n\n"
+    for i, choice in enumerate(q["choices"], start=1):
         text += f"{i}. {choice}\n"
-
     update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
-def ask_qiyas(prompt: str) -> str:
-    """يرد على سؤال القدرات فقط بإجابات قصيرة"""
-    keywords = ["قدرات", "اختبار", "كمي", "لفظي", "قدرة", "قياس"]
-    if not any(word in prompt for word in keywords):
-        return "⚠️ اكتب سؤال له علاقة باختبار القدرات فقط."
+# ---------------- Helpers (Times) ----------------
+def times_reset(user_id: int, total=10):
+    times_state[user_id] = {"q": 0, "correct": 0, "a": 0, "b": 0, "answer": 0, "total": total, "choosing": False}
 
-    if not AI_API_KEY:
-        return "ℹ️ وضعية (اسأل قياس) غير مفعلة لأن AI_API_KEY غير مضبوط."
-
-    try:
-        r = requests.post(
-            "https://api.openai.com/v1/responses",
-            headers={
-                "Authorization": f"Bearer {AI_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": AI_MODEL,
-                "input": (
-                    "جاوب بإيجاز وبالعربية (3–4 أسطر كحد أقصى) "
-                    "على السؤال التالي المتعلق باختبار القدرات:\n\n"
-                    f"{prompt}"
-                )
-            },
-            timeout=30
+def times_next_question(update: Update, user_id: int):
+    st = times_state[user_id]
+    st["q"] += 1
+    if st["q"] > st["total"]:
+        score = round(st["correct"] / st["total"] * 100, 2)
+        update.message.reply_text(
+            f"✅ انتهى اختبار الضرب!\n"
+            f"عدد الأسئلة: {st['total']}\n"
+            f"إجابات صحيحة: {st['correct']}\n"
+            f"درجتك: {score}%",
+            reply_markup=MAIN_MENU_KB
         )
-        data = r.json()
-        if "output" in data and data["output"]:
-            node = data["output"][0]["content"][0]
-            return node.get("text", "⚠️ لم يصل رد من (اسأل قياس).").strip()
-        return "⚠️ لم يصل رد من (اسأل قياس)."
-    except Exception as e:
-        logging.exception("AI error")
-        return f"⚠️ خطأ أثناء الاتصال بـ (اسأل قياس): {e}"
+        mode[user_id] = None
+        return
+    a = random.randint(1, 10); b = random.randint(1, 10)
+    st["a"], st["b"], st["answer"] = a, b, a * b
+    update.message.reply_text(
+        f"سؤال {st['q']}/{st['total']} — اكتب الناتج رقمياً:\n\n{a} × {b} = ؟",
+        reply_markup=times_kb
+    )
 
-# =========================
-# أوامر
-# =========================
+# ---------------- Commands ----------------
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("مرحباً! اختر من الأزرار بالأسفل:", reply_markup=MAIN_MENU_KB)
+    user_id = update.message.from_user.id
+    mode[user_id] = None
+    update.message.reply_text("مرحباً! اختر من الأزرار:", reply_markup=MAIN_MENU_KB)
 
 def quiz(update: Update, context: CallbackContext):
+    qtype = None
+    if context.args:
+        qtype = context.args[0].lower()
+        if qtype not in {"math", "logic", "all"}:
+            update.message.reply_text("ℹ️ الأنواع المتاحة: math, logic, all\nمثال: /quiz math")
+            return
     user_id = update.message.from_user.id
-    reset_user(user_id)
-    update.message.reply_text("🚀 بدأنا اختبار القدرات. أجب برقم (1–4).", reply_markup=ReplyKeyboardRemove())
-    send_question(update, context, 0, user_id)
+    mode[user_id] = "mcq"
+    reset_user(user_id, qtype)
+    kind = user_progress[user_id]["type"]
+    update.message.reply_text(f"🧠 بدأنا اختبار ({'الكل' if kind=='all' else kind}). جاوب بالأرقام 1–4.", reply_markup=ReplyKeyboardRemove())
+    send_mcq_question(update, context, user_id)
 
 def score(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     if user_id not in user_progress:
-        update.message.reply_text("ℹ️ ابدأ أولاً بالضغط على (🧠 اختبار القدرات).", reply_markup=MAIN_MENU_KB)
+        update.message.reply_text("ℹ️ اكتب /quiz للبدء ثم /score لعرض نتيجتك.")
         return
-    prog = user_progress[user_id]
-    idx  = prog["index"]
-    c    = prog["correct"]
-    w    = prog["wrong"]
+    st = user_progress[user_id]
+    idx = st["index"]; c = st["correct"]; w = st["wrong"]
     total = c + w
-    pct   = round((c / total) * 100, 2) if total > 0 else 0.0
+    pct = round((c / total) * 100, 2) if total > 0 else 0.0
     update.message.reply_text(
-        f"📊 نتيجتك:\n"
-        f"السؤال الحالي: {min(idx+1, len(QUESTIONS))}/{len(QUESTIONS)}\n"
-        f"✅ صحيحة: {c}\n"
-        f"❌ خاطئة: {w}\n"
-        f"📈 النسبة: {pct}%",
-        reply_markup=MAIN_MENU_KB
+        f"📊 نتيجتك ({'الكل' if st['type']=='all' else st['type']}):\n"
+        f"السؤال: {min(idx+1, len(st['pool']))}/{len(st['pool'])}\n"
+        f"✅ صحيحة: {c}\n❌ خاطئة: {w}\n📈 النسبة: {pct}%"
     )
 
-# =========================
-# معالج الرسائل
-# =========================
+# ---------------- Text Handler ----------------
 def handle_text(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     text = (update.message.text or "").strip()
 
     # أزرار القائمة
     if text == "🧠 اختبار القدرات":
-        if user_id in ask_mode:
-            ask_mode.discard(user_id)
-        quiz(update, context)
-        return
-
+        quiz(update, context); return
     if text == "📊 نتيجتي":
-        score(update, context)
+        score(update, context); return
+    if text == "🧮 اختبار جدول الضرب":
+        mode[user_id] = "times"
+        # اختيار عدد الأسئلة أولاً
+        times_state[user_id] = {"choosing": True}
+        update.message.reply_text("اختر عدد الأسئلة:", reply_markup=times_choose_kb)
         return
 
-    if text == "❓ اسأل قياس":
-        ask_mode.add(user_id)
-        update.message.reply_text(
-            "اكتب سؤالك الآن 👇 (فقط أسئلة القدرات)",
-            reply_markup=ReplyKeyboardRemove()
-        )
+    # إعادة اختبار MCQ
+    if text == RESTART_TEXT:
+        if user_id in user_progress:
+            prev_type = user_progress[user_id].get("type", "all")
+        else:
+            prev_type = "all"
+        mode[user_id] = "mcq"
+        reset_user(user_id, prev_type)
+        update.message.reply_text("🔁 بدأنا من جديد!", reply_markup=ReplyKeyboardRemove())
+        send_mcq_question(update, context, user_id)
         return
 
-    if text == "🔁 إعادة الاختبار":
-        if user_id in ask_mode:
-            ask_mode.discard(user_id)
-        quiz(update, context)
+    # منطق اختيار عدد أسئلة الضرب
+    if mode.get(user_id) == "times":
+        st = times_state.get(user_id, {})
+        if text == TIMES_QUIT:
+            mode[user_id] = None
+            update.message.reply_text("تم إنهاء اختبار الضرب.", reply_markup=MAIN_MENU_KB)
+            return
+        if st.get("choosing"):
+            if text not in TIMES_MENU:
+                update.message.reply_text("اختر من الأزرار: 5 أسئلة / 10 أسئلة / 20 سؤال", reply_markup=times_choose_kb)
+                return
+            total = 10
+            if text.startswith("5"): total = 5
+            elif text.startswith("10"): total = 10
+            elif text.startswith("20"): total = 20
+            times_reset(user_id, total=total)
+            update.message.reply_text(f"🧮 بدأنا اختبار الضرب ({total} سؤال). اكتب الناتج رقمياً.", reply_markup=times_kb)
+            times_next_question(update, user_id)
+            return
+        # الإجابة الرقمية
+        if not text.isdigit():
+            update.message.reply_text("⚠️ اكتب الناتج رقمياً (مثال: 24) أو اضغط إنهاء.", reply_markup=times_kb)
+            return
+        st = times_state[user_id]
+        val = int(text)
+        if val == st["answer"]:
+            st["correct"] = st.get("correct", 0) + 1
+            update.message.reply_text("✅ صحيح!")
+        else:
+            update.message.reply_text(f"❌ خطأ. الصحيح: {st['answer']}")
+        times_next_question(update, user_id)
         return
 
-    # وضعية "اسأل قياس"
-    if user_id in ask_mode:
-        reply = ask_qiyas(text)
-        update.message.reply_text(reply, reply_markup=MAIN_MENU_KB)
-        ask_mode.discard(user_id)
+    # وضعية MCQ
+    if mode.get(user_id) == "mcq":
+        if user_id not in user_progress:
+            update.message.reply_text("💡 اكتب /quiz للبدء.", reply_markup=MAIN_MENU_KB)
+            return
+        st = user_progress[user_id]
+        idx = st["index"]
+        if idx >= len(st["pool"]):
+            update.message.reply_text("✅ الاختبار انتهى.", reply_markup=restart_kb)
+            return
+        if not text.isdigit():
+            update.message.reply_text("⚠️ اكتب رقم الاختيار (1–4).")
+            return
+        choice = int(text) - 1
+        if choice < 0 or choice > 3:
+            update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
+            return
+        q = st["pool"][idx]
+        if choice == q["answer_index"]:
+            st["correct"] += 1
+            update.message.reply_text(f"✅ صحيح!\n{q.get('explanation','')}".strip())
+        else:
+            st["wrong"] += 1
+            correct_choice = q["choices"][q["answer_index"]]
+            update.message.reply_text(f"❌ خطأ.\nالصحيح: {correct_choice}\n{q.get('explanation','')}".strip())
+        st["index"] += 1
+        send_mcq_question(update, context, user_id)
         return
 
-    # منطق الإجابة على الأسئلة
-    if user_id not in user_progress:
-        update.message.reply_text("💡 اختر من القائمة:", reply_markup=MAIN_MENU_KB)
-        return
+    # لو ما في وضعية
+    update.message.reply_text("اختر من الأزرار:", reply_markup=MAIN_MENU_KB)
 
-    q_index = user_progress[user_id]["index"]
-    if q_index >= len(QUESTIONS):
-        update.message.reply_text("✅ الاختبار انتهى. اختر من القائمة:", reply_markup=MAIN_MENU_KB)
-        return
-
-    if not text.isdigit():
-        update.message.reply_text("⚠️ اكتب رقم الاختيار (1–4).")
-        return
-
-    choice_num = int(text) - 1
-    if choice_num < 0 or choice_num > 3:
-        update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
-        return
-
-    q = QUESTIONS[q_index]
-    if choice_num == q["answer_index"]:
-        user_progress[user_id]["correct"] += 1
-        update.message.reply_text(f"✅ إجابة صحيحة!\n{q.get('explanation','')}".strip())
-    else:
-        user_progress[user_id]["wrong"] += 1
-        correct_choice = q["choices"][q["answer_index"]]
-        update.message.reply_text(
-            f"❌ خطأ.\nالصحيح: {correct_choice}\n{q.get('explanation','')}".strip()
-        )
-
-    user_progress[user_id]["index"] = q_index + 1
-    send_question(update, context, user_progress[user_id]["index"], user_id)
-
-# =========================
-# Handlers
-# =========================
+# ---------------- Bind ----------------
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("quiz", quiz))
 dispatcher.add_handler(CommandHandler("score", score))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
 
-# Webhook
+# ---------------- Webhook ----------------
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
