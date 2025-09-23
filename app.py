@@ -1,151 +1,142 @@
+# app.py
 import os
 import json
-import logging
-from flask import Flask, request
-from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
+import random
+from flask import Flask, request, jsonify
 
-# إعداد اللوجات
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, Dispatcher
 
+# ========= الإعدادات =========
+TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_TOKEN")
+if not TOKEN:
+    raise RuntimeError("ضع متغير البيئة BOT_TOKEN في إعدادات Render.")
+
+# تحميل بنك الأسئلة من data.json (تأكد أن الملف JSON سليم ومغلق بالأقواس)
+with open("data.json", "r", encoding="utf-8") as f:
+    QUESTIONS = json.load(f)
+
+# حالة مؤقتة للمستخدمين بالذاكرة
+STATE = {}  # user_id -> {"qid":int, "answer_index":int}
+
+# بوت وتوزيع
+bot = Bot(token=TOKEN)
+updater = Updater(token=TOKEN, use_context=True)
+dispatcher: Dispatcher = updater.dispatcher
+
+# ========= دوال البوت =========
+def pick_question() -> dict:
+    """يرجع سؤال عشوائي من القائمة."""
+    return random.choice(QUESTIONS)
+
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "أهلًا 👋 أنا بوت قياس.\nأرسل /quiz لبدء سؤال عشوائي، أو /help للمساعدة."
+    )
+
+def help_cmd(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "الأوامر:\n/quiz سؤال عشوائي\n/stop لإلغاء السؤال الحالي"
+    )
+
+def stop_cmd(update: Update, context: CallbackContext):
+    uid = update.effective_user.id
+    STATE.pop(uid, None)
+    update.message.reply_text("تم إلغاء السؤال الحالي.", reply_markup=ReplyKeyboardRemove())
+
+def quiz(update: Update, context: CallbackContext):
+    q = pick_question()
+    uid = update.effective_user.id
+    STATE[uid] = {"qid": q.get("id"), "answer_index": q.get("answer_index", 0)}
+
+    # لوحة خيارات
+    choices = q.get("choices", [])
+    keyboard = [[c] for c in choices]
+    kb = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+
+    update.message.reply_text(f"سؤال #{q.get('id')}:\n{q.get('question')}", reply_markup=kb)
+
+def on_text(update: Update, context: CallbackContext):
+    """استقبال إجابة المستخدم على السؤال الحالي."""
+    if not update.message:
+        return
+
+    uid = update.effective_user.id
+    if uid not in STATE:
+        # بدون حالة -> اعرض مساعدة بسيطة
+        if update.message.text.strip().startswith("/"):
+            return  # أوامر تُعالَج handlers أخرى
+        update.message.reply_text("أرسل /quiz لبدء سؤال جديد.")
+        return
+
+    # لدينا سؤال جارٍ
+    user_ans = update.message.text.strip()
+    # ابحث السؤال من الذاكرة (أبسط شكل: استرجاعه من القائمة)
+    current = STATE[uid]
+    qid = current["qid"]
+
+    q = next((x for x in QUESTIONS if x.get("id") == qid), None)
+    if not q:
+        update.message.reply_text("السؤال غير موجود، أرسل /quiz للمحاولة مجددًا.", reply_markup=ReplyKeyboardRemove())
+        STATE.pop(uid, None)
+        return
+
+    correct_idx = int(q.get("answer_index", 0))
+    choices = q.get("choices", [])
+    correct_val = choices[correct_idx] if 0 <= correct_idx < len(choices) else None
+
+    if correct_val is not None and user_ans == str(correct_val):
+        update.message.reply_text("✔️ إجابة صحيحة! 🎉", reply_markup=ReplyKeyboardRemove())
+    else:
+        exp = q.get("explanation", "")
+        update.message.reply_text(f"✖️ إجابة غير صحيحة.\nالصحيح: {correct_val}\nالشرح: {exp}", reply_markup=ReplyKeyboardRemove())
+
+    # نظّف الحالة واطلب سؤالًا جديدًا سريعًا
+    STATE.pop(uid, None)
+    update.message.reply_text("أرسل /quiz لسؤال آخر.")
+
+# ربط الهاندلرز
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("help", help_cmd))
+dispatcher.add_handler(CommandHandler("stop", stop_cmd))
+dispatcher.add_handler(CommandHandler("quiz", quiz))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, on_text))
+
+# ========= تطبيق Flask ومسارات الويبهوك =========
 app = Flask(__name__)
 
-# تحميل التوكن
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-if not TOKEN:
-    logger.error("❌ TELEGRAM_BOT_TOKEN غير معين")
-    raise ValueError("TELEGRAM_BOT_TOKEN غير معين")
+@app.get("/")
+def health():
+    return "OK", 200
 
-# تهيئة البوت
-try:
-    bot = Bot(token=TOKEN)
-    dispatcher = Dispatcher(bot, None, workers=0)
-    logger.info("✅ تم تهيئة البوت بنجاح")
-except Exception as e:
-    logger.error(f"❌ خطأ في تهيئة البوت: {e}")
-    raise
+# ويبهـوك رئيسي على جذر الموقع (لو تبي مسار مخصص غيّر السطر تحت)
+@app.post("/")
+def telegram_webhook_root():
+    update = Update.de_json(request.get_json(force=True, silent=True) or {}, bot)
+    dispatcher.process_update(update)
+    return jsonify(ok=True)
 
-# تحميل الأسئلة
-try:
-    with open("data.json", "r", encoding="utf-8") as f:
-        QUESTIONS = json.load(f)
-    logger.info(f"✅ تم تحميل {len(QUESTIONS)} سؤال")
-except Exception as e:
-    logger.error(f"❌ خطأ في تحميل data.json: {e}")
-    QUESTIONS = []
+# مسار بديل باسم التوكن (تقدر تستخدمه للـ setWebhook)
+@app.post(f"/webhook/{TOKEN}")
+def telegram_webhook_token():
+    update = Update.de_json(request.get_json(force=True, silent=True) or {}, bot)
+    dispatcher.process_update(update)
+    return jsonify(ok=True)
 
-# متابعة المستخدمين
-user_progress = {}
-
-def reset_user(user_id):
-    user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
-
-def send_question(update, context, user_id):
-    if not QUESTIONS:
-        update.message.reply_text("❌ لا توجد أسئلة متاحة")
-        return
-        
-    if user_id not in user_progress:
-        reset_user(user_id)
-        
-    progress = user_progress[user_id]
-    q_index = progress["index"]
-    
-    if q_index >= len(QUESTIONS):
-        # انتهاء الأسئلة
-        correct = progress["correct"]
-        wrong = progress["wrong"]
-        total = correct + wrong
-        score = round((correct / total) * 100, 2) if total > 0 else 0
-        
-        update.message.reply_text(
-            f"🎉 انتهى الاختبار!\n"
-            f"✅ الصحيحة: {correct}\n"
-            f"❌ الخاطئة: {wrong}\n"
-            f"📊 النسبة: {score}%"
-        )
-        return
-    
-    # عرض السؤال
-    q = QUESTIONS[q_index]
-    text = f"السؤال {q_index + 1}/{len(QUESTIONS)}:\n{q['question']}\n\n"
-    for i, choice in enumerate(q["choices"], 1):
-        text += f"{i}. {choice}\n"
-    
-    update.message.reply_text(text)
-
-def start(update, context):
-    user_id = update.message.from_user.id
-    reset_user(user_id)
-    update.message.reply_text("🚀 أهلاً! ابدأ بالإجابة برقم من 1 إلى 4")
-    send_question(update, context, user_id)
-
-def handle_message(update, context):
-    user_id = update.message.from_user.id
-    text = update.message.text.strip()
-    
-    if user_id not in user_progress:
-        update.message.reply_text("اكتب /start للبدء")
-        return
-    
-    progress = user_progress[user_id]
-    q_index = progress["index"]
-    
-    if q_index >= len(QUESTIONS):
-        update.message.reply_text("انتهى الاختبار. اكتب /start للبدء من جديد")
-        return
-    
-    if not text.isdigit() or not (1 <= int(text) <= 4):
-        update.message.reply_text("⚠️ أدخل رقم من 1 إلى 4")
-        return
-    
-    choice_index = int(text) - 1
-    current_q = QUESTIONS[q_index]
-    
-    if choice_index == current_q["answer_index"]:
-        progress["correct"] += 1
-        update.message.reply_text("✅ صحيح!")
-    else:
-        progress["wrong"] += 1
-        correct_answer = current_q["choices"][current_q["answer_index"]]
-        update.message.reply_text(f"❌ خطأ. الإجابة الصحيحة: {correct_answer}")
-    
-    progress["index"] += 1
-    send_question(update, context, user_id)
-
-# تسجيل ال handlers
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
-@app.route(f'/webhook/{TOKEN}', methods=['POST'])
-def webhook():
-    try:
-        data = request.get_json()
-        update = Update.de_json(data, bot)
-        dispatcher.process_update(update)
-        return 'ok'
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return 'error', 500
-
-@app.route('/')
-def home():
-    return '✅ البوت شغال!'
-
-@app.route('/set_webhook')
+# مساعدة لتثبيت الويبهوك من المتصفح: /setwebhook?url=https://example.onrender.com/webhook/<TOKEN>
+@app.get("/setwebhook")
 def set_webhook():
-    try:
-        webhook_url = f'https://{request.host}/webhook/{TOKEN}'
-        bot.set_webhook(webhook_url)
-        return f'✅ Webhook set: {webhook_url}'
-    except Exception as e:
-        return f'❌ Error: {e}'
+    url = request.args.get("url")
+    if not url:
+        # حاول أخذ عنوان Render تلقائيًا
+        base = os.getenv("RENDER_EXTERNAL_URL")
+        if base:
+            url = f"{base}/webhook/{TOKEN}"
+    if not url:
+        return "مرّر باراميتر ?url=...", 400
+    ok = bot.set_webhook(url)
+    return jsonify(ok=ok, url=url)
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"Starting server on port {port}")
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    # للتشغيل المحلي فقط (Render يستخدم gunicorn)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "10000")))
