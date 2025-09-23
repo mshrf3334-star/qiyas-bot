@@ -1,142 +1,333 @@
 # app.py
-import os
-import json
-import random
-from flask import Flask, request, jsonify
+import os, json, time, random, asyncio
+from flask import Flask, request
+from typing import Dict, Any, Optional, List
 
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, Dispatcher
+# Telegram v20
+from telegram import (
+    Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot, KeyboardButton
+)
+from telegram.ext import (
+    Application, MessageHandler, CommandHandler, ContextTypes, filters
+)
 
-# ========= الإعدادات =========
-TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_TOKEN")
-if not TOKEN:
-    raise RuntimeError("ضع متغير البيئة BOT_TOKEN في إعدادات Render.")
+# ======== الإعدادات ========
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # اختياري
+BOT_NAME = "قياس"
 
-# تحميل بنك الأسئلة من data.json (تأكد أن الملف JSON سليم ومغلق بالأقواس)
-with open("data.json", "r", encoding="utf-8") as f:
-    QUESTIONS = json.load(f)
+# ======== الذكاء الاصطناعي (اختياري) ========
+USE_AI = bool(OPENAI_API_KEY)
+if USE_AI:
+    import openai
+    openai.api_key = OPENAI_API_KEY
 
-# حالة مؤقتة للمستخدمين بالذاكرة
-STATE = {}  # user_id -> {"qid":int, "answer_index":int}
+async def ai_reply(text: str) -> str:
+    """يرد من OpenAI (إن وجد)."""
+    if not USE_AI:
+        return "وضع الذكاء الاصطناعي غير مفعّل حاليًا."
+    def _call():
+        msgs = [
+            {"role": "system", "content": f"أنت مساعد تعليمي عربي مختصر وودود باسم {BOT_NAME}. اشرح ببساطة وبخطوات."},
+            {"role": "user", "content": text},
+        ]
+        resp = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", messages=msgs, max_tokens=350, temperature=0.4
+        )
+        return resp["choices"][0]["message"]["content"].strip()
+    return await asyncio.to_thread(_call)
 
-# بوت وتوزيع
-bot = Bot(token=TOKEN)
-updater = Updater(token=TOKEN, use_context=True)
-dispatcher: Dispatcher = updater.dispatcher
+# ======== تحميل بنك الأسئلة ========
+def load_questions() -> List[Dict[str, Any]]:
+    path = "data.json"
+    if not os.path.exists(path):
+        print("⚠️ لم يتم العثور على data.json — ميزة الاختبار ستظهر رسالة تنبيه.")
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # فحص بسيط للصيغة
+        for i, q in enumerate(data, start=1):
+            assert isinstance(q.get("question"), str)
+            assert isinstance(q.get("choices"), list) and len(q["choices"]) == 4
+            assert isinstance(q.get("answer_index"), int)
+        print(f"✅ تم تحميل {len(data)} سؤالًا من data.json")
+        return data
+    except Exception as e:
+        print("❌ خطأ قراءة/صيغة في data.json:", e)
+        return []
 
-# ========= دوال البوت =========
-def pick_question() -> dict:
-    """يرجع سؤال عشوائي من القائمة."""
+QUESTIONS = load_questions()
+
+# ======== حالة المستخدم ========
+# state[user_id] = {
+#   "mode": "idle" | "quiz" | "table" | "ai",
+#   "idx": int, "correct": int, "wrong": int, "total": int,
+#   "current_q": {...}, "timestamp": float
+# }
+state: Dict[int, Dict[str, Any]] = {}
+COOLDOWN_SEC = 2.0  # مانع سبام بسيط
+
+def now() -> float:
+    return time.time()
+
+def cooldown_ok(uid: int) -> bool:
+    s = state.get(uid, {})
+    last = s.get("timestamp", 0)
+    if now() - last < COOLDOWN_SEC:
+        return False
+    s["timestamp"] = now()
+    state[uid] = s
+    return True
+
+# ======== أدوات الاختبار ========
+MAIN_KB = ReplyKeyboardMarkup(
+    [
+        [KeyboardButton("🎯 اختبر نفسك"), KeyboardButton("🧮 جدول الضرب")],
+        [KeyboardButton("🧠 اسأل قياس (ذكاء اصطناعي)")],
+        [KeyboardButton("📊 نتيجتي"), KeyboardButton("🔁 إعادة")],
+    ],
+    resize_keyboard=True
+)
+
+CHOICE_KB = ReplyKeyboardMarkup(
+    [[KeyboardButton("1"), KeyboardButton("2")],
+     [KeyboardButton("3"), KeyboardButton("4")],
+     [KeyboardButton("🔙 رجوع")]],
+    resize_keyboard=True, one_time_keyboard=False
+)
+
+def reset_progress(uid: int):
+    state[uid] = {
+        "mode": "idle", "idx": 0, "correct": 0, "wrong": 0,
+        "total": 0, "current_q": None, "timestamp": 0.0
+    }
+
+def pick_random_question() -> Optional[Dict[str, Any]]:
+    if not QUESTIONS:
+        return None
     return random.choice(QUESTIONS)
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "أهلًا 👋 أنا بوت قياس.\nأرسل /quiz لبدء سؤال عشوائي، أو /help للمساعدة."
+async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q: Dict[str, Any]):
+    txt = f"❓ سؤال #{q.get('id','')}\n\n{q['question']}\n\n"
+    for i, ch in enumerate(q["choices"], start=1):
+        txt += f"{i}) {ch}\n"
+    await update.message.reply_text(txt.strip(), reply_markup=CHOICE_KB)
+
+def evaluate_answer(q: Dict[str, Any], user_text: str) -> (bool, str):
+    # يقبل الرقم (1-4) أو النص الكامل
+    ans_idx = q["answer_index"]
+    correct_val = q["choices"][ans_idx]
+    user_text = user_text.strip()
+    ok = False
+    if user_text.isdigit():
+        ok = (int(user_text) - 1) == ans_idx
+    else:
+        ok = (user_text == str(correct_val))
+    exp = q.get("explanation", "")
+    if ok:
+        return True, f"✅ صحيحة! {('— ' + exp) if exp else ''}".strip()
+    else:
+        return False, f"❌ خاطئة.\nالصحيح: {correct_val}\n{exp}".strip()
+
+def score_line(s: Dict[str, Any]) -> str:
+    total = s.get("total", 0)
+    c = s.get("correct", 0)
+    w = s.get("wrong", 0)
+    pct = round((c / total) * 100, 2) if total else 0.0
+    return f"📊 نتيجتك: صحيحة {c} — خاطئة {w} — النسبة {pct}%"
+
+# ======== Telegram Handlers ========
+async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    reset_progress(uid)
+    await update.message.reply_text(
+        f"أهلًا 👋 أنا {BOT_NAME}.\nاختر من القائمة:",
+        reply_markup=MAIN_KB
     )
 
-def help_cmd(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "الأوامر:\n/quiz سؤال عشوائي\n/stop لإلغاء السؤال الحالي"
+async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "الأوامر:\n"
+        "/start — القائمة الرئيسية\n"
+        "/help — المساعدة\n"
+        "أو استخدم الأزرار: 🎯 اختبر نفسك، 🧮 جدول الضرب، 🧠 اسأل قياس، 📊 نتيجتي، 🔁 إعادة",
+        reply_markup=MAIN_KB
     )
 
-def stop_cmd(update: Update, context: CallbackContext):
+async def show_score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    STATE.pop(uid, None)
-    update.message.reply_text("تم إلغاء السؤال الحالي.", reply_markup=ReplyKeyboardRemove())
+    if uid not in state:
+        reset_progress(uid)
+    await update.message.reply_text(score_line(state[uid]), reply_markup=MAIN_KB)
 
-def quiz(update: Update, context: CallbackContext):
-    q = pick_question()
+async def handle_main_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """يرجع True إذا تمت المعالجة هنا."""
     uid = update.effective_user.id
-    STATE[uid] = {"qid": q.get("id"), "answer_index": q.get("answer_index", 0)}
+    txt = (update.message.text or "").strip()
 
-    # لوحة خيارات
-    choices = q.get("choices", [])
-    keyboard = [[c] for c in choices]
-    kb = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    if txt == "🔁 إعادة":
+        reset_progress(uid)
+        await update.message.reply_text("تمت الإعادة. اختر وضعًا:", reply_markup=MAIN_KB)
+        return True
 
-    update.message.reply_text(f"سؤال #{q.get('id')}:\n{q.get('question')}", reply_markup=kb)
+    if txt == "📊 نتيجتي":
+        await show_score(update, context)
+        return True
 
-def on_text(update: Update, context: CallbackContext):
-    """استقبال إجابة المستخدم على السؤال الحالي."""
+    if txt == "🎯 اختبر نفسك":
+        if not QUESTIONS:
+            await update.message.reply_text("لا يوجد بنك أسئلة (data.json غير متاح أو فيه خطأ).", reply_markup=MAIN_KB)
+            return True
+        if uid not in state:
+            reset_progress(uid)
+        s = state[uid]
+        s["mode"] = "quiz"
+        q = pick_random_question()
+        s["current_q"] = q
+        s["total"] += 1
+        s["idx"] += 1
+        state[uid] = s
+        await update.message.reply_text("بدأ الاختبار — اختر الإجابة الصحيحة:", reply_markup=CHOICE_KB)
+        await send_question(update, context, q)
+        return True
+
+    if txt == "🧮 جدول الضرب":
+        if uid not in state:
+            reset_progress(uid)
+        s = state[uid]
+        s["mode"] = "table"
+        # سؤال عشوائي 2..12
+        a, b = random.randint(2, 12), random.randint(2, 12)
+        s["current_q"] = {"id": None, "question": f"{a} × {b} = ?", "choices": [], "answer_index": None, "answer": a*b}
+        s["total"] += 1
+        s["idx"] += 1
+        state[uid] = s
+        await update.message.reply_text(f"❓ {a} × {b} = ?", reply_markup=ReplyKeyboardMarkup(
+            [[KeyboardButton("🔙 رجوع")]], resize_keyboard=True))
+        return True
+
+    if txt == "🧠 اسأل قياس (ذكاء اصطناعي)":
+        if uid not in state:
+            reset_progress(uid)
+        s = state[uid]
+        s["mode"] = "ai"
+        state[uid] = s
+        await update.message.reply_text("أرسل سؤالك التعليمي وسأجيبك.", reply_markup=ReplyKeyboardMarkup(
+            [[KeyboardButton("🔙 رجوع")]], resize_keyboard=True))
+        return True
+
+    if txt == "🔙 رجوع":
+        if uid not in state:
+            reset_progress(uid)
+        s = state[uid]
+        s["mode"] = "idle"
+        s["current_q"] = None
+        state[uid] = s
+        await update.message.reply_text("رجعناك للقائمة الرئيسية:", reply_markup=MAIN_KB)
+        return True
+
+    return False
+
+async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
-
     uid = update.effective_user.id
-    if uid not in STATE:
-        # بدون حالة -> اعرض مساعدة بسيطة
-        if update.message.text.strip().startswith("/"):
-            return  # أوامر تُعالَج handlers أخرى
-        update.message.reply_text("أرسل /quiz لبدء سؤال جديد.")
+    if uid not in state:
+        reset_progress(uid)
+
+    # مانع سبام بسيط
+    if not cooldown_ok(uid):
         return
 
-    # لدينا سؤال جارٍ
-    user_ans = update.message.text.strip()
-    # ابحث السؤال من الذاكرة (أبسط شكل: استرجاعه من القائمة)
-    current = STATE[uid]
-    qid = current["qid"]
-
-    q = next((x for x in QUESTIONS if x.get("id") == qid), None)
-    if not q:
-        update.message.reply_text("السؤال غير موجود، أرسل /quiz للمحاولة مجددًا.", reply_markup=ReplyKeyboardRemove())
-        STATE.pop(uid, None)
+    # أزرار رئيسية
+    if await handle_main_buttons(update, context):
         return
 
-    correct_idx = int(q.get("answer_index", 0))
-    choices = q.get("choices", [])
-    correct_val = choices[correct_idx] if 0 <= correct_idx < len(choices) else None
+    s = state[uid]
+    mode = s.get("mode", "idle")
+    txt = (update.message.text or "").strip()
 
-    if correct_val is not None and user_ans == str(correct_val):
-        update.message.reply_text("✔️ إجابة صحيحة! 🎉", reply_markup=ReplyKeyboardRemove())
-    else:
-        exp = q.get("explanation", "")
-        update.message.reply_text(f"✖️ إجابة غير صحيحة.\nالصحيح: {correct_val}\nالشرح: {exp}", reply_markup=ReplyKeyboardRemove())
+    # === وضع الاختبار من data.json ===
+    if mode == "quiz":
+        q = s.get("current_q")
+        if not q:
+            await update.message.reply_text("اكتب: 🎯 اختبر نفسك لبدء سؤال.", reply_markup=MAIN_KB)
+            return
+        ok, msg = evaluate_answer(q, txt)
+        if ok:
+            s["correct"] += 1
+        else:
+            s["wrong"] += 1
+        state[uid] = s
+        await update.message.reply_text(msg)
+        # سؤال جديد تلقائي
+        q2 = pick_random_question()
+        s["current_q"] = q2
+        s["total"] += 1
+        s["idx"] += 1
+        state[uid] = s
+        await send_question(update, context, q2)
+        return
 
-    # نظّف الحالة واطلب سؤالًا جديدًا سريعًا
-    STATE.pop(uid, None)
-    update.message.reply_text("أرسل /quiz لسؤال آخر.")
+    # === وضع جدول الضرب ===
+    if mode == "table":
+        q = s.get("current_q")
+        if not q:
+            await update.message.reply_text("اختر 🧮 جدول الضرب للبدء.", reply_markup=MAIN_KB)
+            return
+        # يقبل رقم المستخدم
+        if not txt.isdigit():
+            await update.message.reply_text("اكتب الناتج كرقم صحيح أو اضغط 🔙 رجوع.")
+            return
+        user_val = int(txt)
+        correct = int(q["answer"])
+        if user_val == correct:
+            s["correct"] += 1
+            await update.message.reply_text("✅ صحيح! ممتاز.")
+        else:
+            s["wrong"] += 1
+            await update.message.reply_text(f"❌ خاطئ. الصحيح: {correct}")
+        # سؤال ضرب جديد
+        a, b = random.randint(2, 12), random.randint(2, 12)
+        s["current_q"] = {"id": None, "question": f"{a} × {b} = ?", "choices": [], "answer_index": None, "answer": a*b}
+        s["total"] += 1
+        s["idx"] += 1
+        state[uid] = s
+        await update.message.reply_text(f"❓ {a} × {b} = ?")
+        return
 
-# ربط الهاندلرز
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("help", help_cmd))
-dispatcher.add_handler(CommandHandler("stop", stop_cmd))
-dispatcher.add_handler(CommandHandler("quiz", quiz))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, on_text))
+    # === وضع الذكاء الاصطناعي ===
+    if mode == "ai":
+        reply = await ai_reply(txt)
+        await update.message.reply_text(reply)
+        return
 
-# ========= تطبيق Flask ومسارات الويبهوك =========
+    # === الوضع الافتراضي ===
+    await update.message.reply_text("اختر من القائمة:", reply_markup=MAIN_KB)
+
+# ======== Flask + Webhook ========
 app = Flask(__name__)
+application = Application.builder().token(BOT_TOKEN).build()
+# نعيد ربط الهاندلرز بعد تعريفها
+application.add_handler(CommandHandler("start", cmd_start))
+application.add_handler(CommandHandler("help", cmd_help))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
+
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def webhook():
+    try:
+        data = request.get_json(force=True)
+        update = Update.de_json(data, application.bot)
+        application.update_queue.put(update)
+    except Exception as e:
+        print("Webhook error:", e)
+    return "ok", 200
 
 @app.get("/")
-def health():
-    return "OK", 200
-
-# ويبهـوك رئيسي على جذر الموقع (لو تبي مسار مخصص غيّر السطر تحت)
-@app.post("/")
-def telegram_webhook_root():
-    update = Update.de_json(request.get_json(force=True, silent=True) or {}, bot)
-    dispatcher.process_update(update)
-    return jsonify(ok=True)
-
-# مسار بديل باسم التوكن (تقدر تستخدمه للـ setWebhook)
-@app.post(f"/webhook/{TOKEN}")
-def telegram_webhook_token():
-    update = Update.de_json(request.get_json(force=True, silent=True) or {}, bot)
-    dispatcher.process_update(update)
-    return jsonify(ok=True)
-
-# مساعدة لتثبيت الويبهوك من المتصفح: /setwebhook?url=https://example.onrender.com/webhook/<TOKEN>
-@app.get("/setwebhook")
-def set_webhook():
-    url = request.args.get("url")
-    if not url:
-        # حاول أخذ عنوان Render تلقائيًا
-        base = os.getenv("RENDER_EXTERNAL_URL")
-        if base:
-            url = f"{base}/webhook/{TOKEN}"
-    if not url:
-        return "مرّر باراميتر ?url=...", 400
-    ok = bot.set_webhook(url)
-    return jsonify(ok=ok, url=url)
+def index():
+    return f"{BOT_NAME} bot is running", 200
 
 if __name__ == "__main__":
-    # للتشغيل المحلي فقط (Render يستخدم gunicorn)
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "10000")))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
