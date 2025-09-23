@@ -3,8 +3,8 @@ import json
 import logging
 import requests
 from flask import Flask, request
-from telegram import Bot, Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # إعداد اللوجات
 logging.basicConfig(
@@ -16,9 +16,10 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
     raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
 
-bot = Bot(token=TOKEN)
+# التطبيق الجديد بدلاً من Dispatcher
+application = Application.builder().token(TOKEN).build()
+
 app = Flask(__name__)
-dispatcher = Dispatcher(bot, None, workers=0)
 
 # تحميل بنك الأسئلة
 with open("data.json", "r", encoding="utf-8") as f:
@@ -34,7 +35,7 @@ restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True, one_tim
 def reset_user(user_id: int):
     user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
 
-def send_question(update: Update, context: CallbackContext, q_index: int, user_id: int):
+async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_index: int, user_id: int):
     total_q = len(QUESTIONS)
 
     if q_index >= total_q:
@@ -43,7 +44,7 @@ def send_question(update: Update, context: CallbackContext, q_index: int, user_i
         total = correct + wrong
         score = round((correct / total) * 100, 2) if total > 0 else 0.0
 
-        update.message.reply_text(
+        await update.message.reply_text(
             f"🎉 خلصت الاختبار!\n\n"
             f"✅ صحيحة: {correct}\n"
             f"❌ خاطئة: {wrong}\n"
@@ -57,26 +58,26 @@ def send_question(update: Update, context: CallbackContext, q_index: int, user_i
     for i, choice in enumerate(q["choices"], start=1):
         text += f"{i}. {choice}\n"
 
-    update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
 # /start
-def start(update: Update, context: CallbackContext):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     reset_user(user_id)
-    update.message.reply_text("🚀 أهلاً! ابدأ الاختبار الآن. أجب برقم (1–4).")
-    send_question(update, context, 0, user_id)
+    await update.message.reply_text("🚀 أهلاً! ابدأ الاختبار الآن. أجب برقم (1–4).")
+    await send_question(update, context, 0, user_id)
 
 # /quiz
-def quiz(update: Update, context: CallbackContext):
+async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     reset_user(user_id)
-    send_question(update, context, 0, user_id)
+    await send_question(update, context, 0, user_id)
 
 # /score
-def score(update: Update, context: CallbackContext):
+async def score(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if user_id not in user_progress:
-        update.message.reply_text("ℹ️ اكتب /quiz للبدء ثم استخدم /score لعرض نتيجتك.")
+        await update.message.reply_text("ℹ️ اكتب /quiz للبدء ثم استخدم /score لعرض نتيجتك.")
         return
     prog = user_progress[user_id]
     idx = prog["index"]
@@ -84,7 +85,7 @@ def score(update: Update, context: CallbackContext):
     wrong = prog["wrong"]
     total = correct + wrong
     pct = round((correct / total) * 100, 2) if total > 0 else 0.0
-    update.message.reply_text(
+    await update.message.reply_text(
         f"📊 نتيجتك الحالية:\n"
         f"السؤال الحالي: {min(idx+1, len(QUESTIONS))}/{len(QUESTIONS)}\n"
         f"✅ صحيحة: {correct}\n"
@@ -93,63 +94,63 @@ def score(update: Update, context: CallbackContext):
     )
 
 # استقبال الإجابات
-def answer(update: Update, context: CallbackContext):
+async def answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     text = (update.message.text or "").strip()
 
     if text == RESTART_TEXT:
         reset_user(user_id)
-        update.message.reply_text("🔁 بدأنا من جديد! بالتوفيق 🤍", reply_markup=ReplyKeyboardRemove())
-        send_question(update, context, 0, user_id)
+        await update.message.reply_text("🔁 بدأنا من جديد! بالتوفيق 🤍", reply_markup=ReplyKeyboardRemove())
+        await send_question(update, context, 0, user_id)
         return
 
     if user_id not in user_progress:
-        update.message.reply_text("💡 اكتب /quiz للبدء.")
+        await update.message.reply_text("💡 اكتب /quiz للبدء.")
         return
 
     q_index = user_progress[user_id]["index"]
     if q_index >= len(QUESTIONS):
-        update.message.reply_text("✅ الاختبار انتهى. اضغط الزر لإعادته.", reply_markup=restart_kb)
+        await update.message.reply_text("✅ الاختبار انتهى. اضغط الزر لإعادته.", reply_markup=restart_kb)
         return
 
     q = QUESTIONS[q_index]
 
     if not text.isdigit():
-        update.message.reply_text("⚠️ اكتب رقم الاختيار (1، 2، 3، 4).")
+        await update.message.reply_text("⚠️ اكتب رقم الاختيار (1، 2، 3، 4).")
         return
 
     choice_num = int(text) - 1
     if choice_num < 0 or choice_num > 3:
-        update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
+        await update.message.reply_text("⚠️ الاختيارات من 1 إلى 4 فقط.")
         return
 
     if choice_num == q["answer_index"]:
         user_progress[user_id]["correct"] += 1
-        update.message.reply_text(f"✅ إجابة صحيحة!\n{q.get('explanation','')}".strip())
+        await update.message.reply_text(f"✅ إجابة صحيحة!\n{q.get('explanation','')}".strip())
     else:
         user_progress[user_id]["wrong"] += 1
         correct_choice = q["choices"][q["answer_index"]]
         explanation = q.get("explanation", "")
-        update.message.reply_text(
+        await update.message.reply_text(
             f"❌ خطأ.\n"
             f"الصحيح: {correct_choice}\n"
             f"{explanation}".strip()
         )
 
     user_progress[user_id]["index"] = q_index + 1
-    send_question(update, context, user_progress[user_id]["index"], user_id)
+    await send_question(update, context, user_progress[user_id]["index"], user_id)
 
 # ربط الأوامر
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("quiz", quiz))
-dispatcher.add_handler(CommandHandler("score", score))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, answer))
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("quiz", quiz))
+application.add_handler(CommandHandler("score", score))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, answer))
 
 # Webhook
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.update_queue.put(update)
     return "ok"
 
 @app.route("/", methods=["GET"])
