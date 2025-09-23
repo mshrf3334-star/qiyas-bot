@@ -4755,15 +4755,6 @@
   "tags": ["رياضيات"]
 },
 {
-  "id": 301,
-  "type": "math",
-  "question": "6 × 7 = ؟",
-  "choices": ["42", "36", "40", "48"],
-  "answer_index": 0,
-  "explanation": "6 × 7 = 42",
-  "tags": ["حساب"]
-},
-{
   "id": 302,
   "type": "math",
   "question": "9 × 8 = ؟",
