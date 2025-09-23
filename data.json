@@ -4367,9 +4367,2194 @@
       "رياضيات",
       "قسمة"
     ]
-  },
-  {
-    "id": 258,
-    "type": "math",
-    "question": "ما ناتج 135 ÷ 5؟",
-    "c
+   }
+{
+  "id": 258,
+  "type": "math",
+  "question": "5 × 135 = ؟",
+  "choices": ["675", "685", "655", "665"],
+  "answer_index": 0,
+  "explanation": "5×135=675.",
+  "tags": ["رياضيات", "ضرب"]
+}
+]
+{
+  "id": 259,
+  "type": "math",
+  "question": "12 × 8 = ؟",
+  "choices": ["92", "96", "88", "108"],
+  "answer_index": 1,
+  "explanation": "12 × 8 = 96",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 260,
+  "type": "math",
+  "question": "15 × 7 = ؟",
+  "choices": ["100", "105", "95", "115"],
+  "answer_index": 1,
+  "explanation": "15 × 7 = 105",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 261,
+  "type": "math",
+  "question": "25 × 4 = ؟",
+  "choices": ["75", "80", "85", "90"],
+  "answer_index": 1,
+  "explanation": "25 × 4 = 100",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 262,
+  "type": "math",
+  "question": "9 × 9 = ؟",
+  "choices": ["81", "99", "79", "89"],
+  "answer_index": 0,
+  "explanation": "9 × 9 = 81",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 263,
+  "type": "math",
+  "question": "30 × 3 = ؟",
+  "choices": ["60", "70", "80", "90"],
+  "answer_index": 3,
+  "explanation": "30 × 3 = 90",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 264,
+  "type": "math",
+  "question": "50 × 2 = ؟",
+  "choices": ["50", "75", "100", "125"],
+  "answer_index": 2,
+  "explanation": "50 × 2 = 100",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 265,
+  "type": "math",
+  "question": "18 × 6 = ؟",
+  "choices": ["96", "108", "112", "118"],
+  "answer_index": 1,
+  "explanation": "18 × 6 = 108",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 266,
+  "type": "math",
+  "question": "14 × 12 = ؟",
+  "choices": ["156", "168", "172", "178"],
+  "answer_index": 1,
+  "explanation": "14 × 12 = 168",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 267,
+  "type": "math",
+  "question": "11 × 11 = ؟",
+  "choices": ["111", "112", "121", "131"],
+  "answer_index": 2,
+  "explanation": "11 × 11 = 121",
+  "tags": ["جدول الضرب"]
+},
+{
+  "id": 268,
+  "type": "math",
+  "question": "16 × 4 = ؟",
+  "choices": ["64", "60", "68", "72"],
+  "answer_index": 0,
+  "explanation": "16 × 4 = 64",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 269,
+  "type": "math",
+  "question": "13 × 7 = ؟",
+  "choices": ["81", "90", "91", "101"],
+  "answer_index": 2,
+  "explanation": "13 × 7 = 91",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 270,
+  "type": "math",
+  "question": "40 × 9 = ؟",
+  "choices": ["320", "350", "360", "380"],
+  "answer_index": 2,
+  "explanation": "40 × 9 = 360",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 271,
+  "type": "math",
+  "question": "22 × 5 = ؟",
+  "choices": ["100", "105", "110", "115"],
+  "answer_index": 2,
+  "explanation": "22 × 5 = 110",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 272,
+  "type": "math",
+  "question": "45 × 2 = ؟",
+  "choices": ["80", "85", "90", "95"],
+  "answer_index": 2,
+  "explanation": "45 × 2 = 90",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 273,
+  "type": "math",
+  "question": "27 × 3 = ؟",
+  "choices": ["71", "72", "80", "81"],
+  "answer_index": 3,
+  "explanation": "27 × 3 = 81",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 274,
+  "type": "math",
+  "question": "33 × 6 = ؟",
+  "choices": ["180", "188", "198", "200"],
+  "answer_index": 2,
+  "explanation": "33 × 6 = 198",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 275,
+  "type": "math",
+  "question": "60 × 7 = ؟",
+  "choices": ["400", "410", "420", "430"],
+  "answer_index": 2,
+  "explanation": "60 × 7 = 420",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 276,
+  "type": "math",
+  "question": "32 × 12 = ؟",
+  "choices": ["364", "374", "384", "394"],
+  "answer_index": 2,
+  "explanation": "32 × 12 = 384",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 277,
+  "type": "math",
+  "question": "25 × 25 = ؟",
+  "choices": ["600", "625", "650", "675"],
+  "answer_index": 1,
+  "explanation": "25 × 25 = 625",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 278,
+  "type": "math",
+  "question": "28 × 14 = ؟",
+  "choices": ["382", "392", "392", "402"],
+  "answer_index": 1,
+  "explanation": "28 × 14 = 392",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 279,
+  "type": "math",
+  "question": "17 × 19 = ؟",
+  "choices": ["320", "323", "327", "330"],
+  "answer_index": 1,
+  "explanation": "17 × 19 = 323",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 280,
+  "type": "math",
+  "question": "36 × 11 = ؟",
+  "choices": ["386", "396", "406", "416"],
+  "answer_index": 1,
+  "explanation": "36 × 11 = 396",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 281,
+  "type": "math",
+  "question": "14 × 14 = ؟",
+  "choices": ["176", "186", "196", "206"],
+  "answer_index": 2,
+  "explanation": "14 × 14 = 196",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 282,
+  "type": "math",
+  "question": "21 × 13 = ؟",
+  "choices": ["263", "273", "283", "293"],
+  "answer_index": 1,
+  "explanation": "21 × 13 = 273",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 283,
+  "type": "math",
+  "question": "19 × 19 = ؟",
+  "choices": ["351", "361", "371", "381"],
+  "answer_index": 1,
+  "explanation": "19 × 19 = 361",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 284,
+  "type": "math",
+  "question": "50 × 15 = ؟",
+  "choices": ["650", "700", "750", "800"],
+  "answer_index": 2,
+  "explanation": "50 × 15 = 750",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 285,
+  "type": "math",
+  "question": "42 × 8 = ؟",
+  "choices": ["326", "336", "346", "356"],
+  "answer_index": 1,
+  "explanation": "42 × 8 = 336",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 286,
+  "type": "math",
+  "question": "70 × 9 = ؟",
+  "choices": ["610", "620", "630", "640"],
+  "answer_index": 2,
+  "explanation": "70 × 9 = 630",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 287,
+  "type": "math",
+  "question": "16 × 16 = ؟",
+  "choices": ["246", "256", "266", "276"],
+  "answer_index": 1,
+  "explanation": "16 × 16 = 256",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 288,
+  "type": "math",
+  "question": "22 × 22 = ؟",
+  "choices": ["474", "484", "494", "504"],
+  "answer_index": 1,
+  "explanation": "22 × 22 = 484",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 289,
+  "type": "math",
+  "question": "30 × 30 = ؟",
+  "choices": ["880", "890", "900", "910"],
+  "answer_index": 2,
+  "explanation": "30 × 30 = 900",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 290,
+  "type": "math",
+  "question": "45 × 12 = ؟",
+  "choices": ["530", "540", "550", "560"],
+  "answer_index": 1,
+  "explanation": "45 × 12 = 540",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 291,
+  "type": "math",
+  "question": "55 × 11 = ؟",
+  "choices": ["605", "615", "625", "635"],
+  "answer_index": 0,
+  "explanation": "55 × 11 = 605",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 292,
+  "type": "math",
+  "question": "33 × 15 = ؟",
+  "choices": ["485", "495", "505", "515"],
+  "answer_index": 1,
+  "explanation": "33 × 15 = 495",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 293,
+  "type": "math",
+  "question": "27 × 18 = ؟",
+  "choices": ["476", "486", "496", "506"],
+  "answer_index": 1,
+  "explanation": "27 × 18 = 486",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 294,
+  "type": "math",
+  "question": "60 × 18 = ؟",
+  "choices": ["1060", "1070", "1080", "1090"],
+  "answer_index": 2,
+  "explanation": "60 × 18 = 1080",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 295,
+  "type": "math",
+  "question": "41 × 23 = ؟",
+  "choices": ["942", "943", "944", "945"],
+  "answer_index": 1,
+  "explanation": "41 × 23 = 943",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 296,
+  "type": "math",
+  "question": "19 × 27 = ؟",
+  "choices": ["512", "513", "514", "515"],
+  "answer_index": 1,
+  "explanation": "19 × 27 = 513",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 297,
+  "type": "math",
+  "question": "23 × 23 = ؟",
+  "choices": ["521", "522", "523", "529"],
+  "answer_index": 3,
+  "explanation": "23 × 23 = 529",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 298,
+  "type": "math",
+  "question": "38 × 38 = ؟",
+  "choices": ["1424", "1444", "1454", "1464"],
+  "answer_index": 1,
+  "explanation": "38 × 38 = 1444",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 299,
+  "type": "math",
+  "question": "28 × 28 = ؟",
+  "choices": ["782", "783", "784", "785"],
+  "answer_index": 2,
+  "explanation": "28 × 28 = 784",
+  "tags": ["رياضيات"]
+},
+{
+  "id": 300,
+  "type": "math",
+  "question": "20 × 20 = ؟",
+  "choices": ["200", "300", "400", "500"],
+  "answer_index": 2,
+  "explanation": "20 × 20 = 400",
+  "tags": ["رياضيات"]
+}
+]
+{
+  "id": 301,
+  "type": "math",
+  "question": "6 × 7 = ؟",
+  "choices": ["42", "36", "40", "48"],
+  "answer_index": 0,
+  "explanation": "6 × 7 = 42",
+  "tags": ["حساب"]
+},
+{
+  "id": 302,
+  "type": "math",
+  "question": "9 × 8 = ؟",
+  "choices": ["64", "72", "81", "70"],
+  "answer_index": 1,
+  "explanation": "9 × 8 = 72",
+  "tags": ["حساب"]
+},
+{
+  "id": 303,
+  "type": "math",
+  "question": "15 × 5 = ؟",
+  "choices": ["60", "70", "75", "65"],
+  "answer_index": 2,
+  "explanation": "15 × 5 = 75",
+  "tags": ["حساب"]
+},
+{
+  "id": 304,
+  "type": "math",
+  "question": "25 × 4 = ؟",
+  "choices": ["80", "90", "100", "75"],
+  "answer_index": 2,
+  "explanation": "25 × 4 = 100",
+  "tags": ["حساب"]
+},
+{
+  "id": 305,
+  "type": "math",
+  "question": "30 × 3 = ؟",
+  "choices": ["60", "90", "100", "120"],
+  "answer_index": 1,
+  "explanation": "30 × 3 = 90",
+  "tags": ["حساب"]
+},
+{
+  "id": 306,
+  "type": "math",
+  "question": "12 × 11 = ؟",
+  "choices": ["121", "124", "132", "142"],
+  "answer_index": 2,
+  "explanation": "12 × 11 = 132",
+  "tags": ["حساب"]
+},
+{
+  "id": 307,
+  "type": "math",
+  "question": "40 × 5 = ؟",
+  "choices": ["180", "190", "200", "210"],
+  "answer_index": 2,
+  "explanation": "40 × 5 = 200",
+  "tags": ["حساب"]
+},
+{
+  "id": 308,
+  "type": "math",
+  "question": "50 × 6 = ؟",
+  "choices": ["200", "250", "300", "350"],
+  "answer_index": 2,
+  "explanation": "50 × 6 = 300",
+  "tags": ["حساب"]
+},
+{
+  "id": 309,
+  "type": "math",
+  "question": "22 × 2 = ؟",
+  "choices": ["42", "44", "46", "48"],
+  "answer_index": 1,
+  "explanation": "22 × 2 = 44",
+  "tags": ["حساب"]
+},
+{
+  "id": 310,
+  "type": "math",
+  "question": "18 × 18 = ؟",
+  "choices": ["324", "334", "344", "354"],
+  "answer_index": 0,
+  "explanation": "18 × 18 = 324",
+  "tags": ["حساب"]
+}
+{
+  "id": 311,
+  "type": "math",
+  "question": "14 × 14 = ؟",
+  "choices": ["184", "196", "200", "176"],
+  "answer_index": 1,
+  "explanation": "14 × 14 = 196",
+  "tags": ["حساب"]
+},
+{
+  "id": 312,
+  "type": "math",
+  "question": "16 × 12 = ؟",
+  "choices": ["182", "192", "202", "212"],
+  "answer_index": 1,
+  "explanation": "16 × 12 = 192",
+  "tags": ["حساب"]
+},
+{
+  "id": 313,
+  "type": "math",
+  "question": "45 × 2 = ؟",
+  "choices": ["80", "85", "90", "95"],
+  "answer_index": 2,
+  "explanation": "45 × 2 = 90",
+  "tags": ["حساب"]
+},
+{
+  "id": 314,
+  "type": "math",
+  "question": "33 × 3 = ؟",
+  "choices": ["88", "96", "99", "102"],
+  "answer_index": 2,
+  "explanation": "33 × 3 = 99",
+  "tags": ["حساب"]
+},
+{
+  "id": 315,
+  "type": "math",
+  "question": "19 × 19 = ؟",
+  "choices": ["351", "361", "371", "381"],
+  "answer_index": 1,
+  "explanation": "19 × 19 = 361",
+  "tags": ["حساب"]
+},
+{
+  "id": 316,
+  "type": "math",
+  "question": "28 × 7 = ؟",
+  "choices": ["186", "196", "206", "216"],
+  "answer_index": 1,
+  "explanation": "28 × 7 = 196",
+  "tags": ["حساب"]
+},
+{
+  "id": 317,
+  "type": "math",
+  "question": "60 × 8 = ؟",
+  "choices": ["420", "440", "460", "480"],
+  "answer_index": 3,
+  "explanation": "60 × 8 = 480",
+  "tags": ["حساب"]
+},
+{
+  "id": 318,
+  "type": "math",
+  "question": "75 × 4 = ؟",
+  "choices": ["250", "275", "300", "325"],
+  "answer_index": 2,
+  "explanation": "75 × 4 = 300",
+  "tags": ["حساب"]
+},
+{
+  "id": 319,
+  "type": "math",
+  "question": "120 × 5 = ؟",
+  "choices": ["500", "550", "600", "650"],
+  "answer_index": 2,
+  "explanation": "120 × 5 = 600",
+  "tags": ["حساب"]
+},
+{
+  "id": 320,
+  "type": "math",
+  "question": "22 × 11 = ؟",
+  "choices": ["232", "242", "252", "262"],
+  "answer_index": 0,
+  "explanation": "22 × 11 = 242",
+  "tags": ["حساب"]
+}
+{
+  "id": 321,
+  "type": "math",
+  "question": "18 × 14 = ؟",
+  "choices": ["242", "252", "262", "272"],
+  "answer_index": 1,
+  "explanation": "18 × 14 = 252",
+  "tags": ["حساب"]
+},
+{
+  "id": 322,
+  "type": "math",
+  "question": "40 × 9 = ؟",
+  "choices": ["340", "350", "360", "370"],
+  "answer_index": 2,
+  "explanation": "40 × 9 = 360",
+  "tags": ["حساب"]
+},
+{
+  "id": 323,
+  "type": "math",
+  "question": "27 × 6 = ؟",
+  "choices": ["152", "162", "172", "182"],
+  "answer_index": 1,
+  "explanation": "27 × 6 = 162",
+  "tags": ["حساب"]
+},
+{
+  "id": 324,
+  "type": "math",
+  "question": "33 × 5 = ؟",
+  "choices": ["155", "160", "165", "170"],
+  "answer_index": 2,
+  "explanation": "33 × 5 = 165",
+  "tags": ["حساب"]
+},
+{
+  "id": 325,
+  "type": "math",
+  "question": "21 × 21 = ؟",
+  "choices": ["421", "431", "441", "451"],
+  "answer_index": 2,
+  "explanation": "21 × 21 = 441",
+  "tags": ["حساب"]
+},
+{
+  "id": 326,
+  "type": "math",
+  "question": "32 × 8 = ؟",
+  "choices": ["246", "252", "256", "262"],
+  "answer_index": 2,
+  "explanation": "32 × 8 = 256",
+  "tags": ["حساب"]
+},
+{
+  "id": 327,
+  "type": "math",
+  "question": "50 × 11 = ؟",
+  "choices": ["540", "550", "560", "570"],
+  "answer_index": 1,
+  "explanation": "50 × 11 = 550",
+  "tags": ["حساب"]
+},
+{
+  "id": 328,
+  "type": "math",
+  "question": "125 × 4 = ؟",
+  "choices": ["475", "485", "495", "500"],
+  "answer_index": 3,
+  "explanation": "125 × 4 = 500",
+  "tags": ["حساب"]
+},
+{
+  "id": 329,
+  "type": "math",
+  "question": "14 × 18 = ؟",
+  "choices": ["242", "252", "262", "272"],
+  "answer_index": 1,
+  "explanation": "14 × 18 = 252",
+  "tags": ["حساب"]
+},
+{
+  "id": 330,
+  "type": "math",
+  "question": "19 × 12 = ؟",
+  "choices": ["218", "228", "238", "248"],
+  "answer_index": 1,
+  "explanation": "19 × 12 = 228",
+  "tags": ["حساب"]
+},
+{
+  "id": 331,
+  "type": "math",
+  "question": "29 × 7 = ؟",
+  "choices": ["193", "200", "203", "210"],
+  "answer_index": 2,
+  "explanation": "29 × 7 = 203",
+  "tags": ["حساب"]
+},
+{
+  "id": 332,
+  "type": "math",
+  "question": "60 × 12 = ؟",
+  "choices": ["700", "710", "720", "730"],
+  "answer_index": 2,
+  "explanation": "60 × 12 = 720",
+  "tags": ["حساب"]
+},
+{
+  "id": 333,
+  "type": "math",
+  "question": "45 × 11 = ؟",
+  "choices": ["485", "490", "495", "500"],
+  "answer_index": 2,
+  "explanation": "45 × 11 = 495",
+  "tags": ["حساب"]
+},
+{
+  "id": 334,
+  "type": "math",
+  "question": "36 × 6 = ؟",
+  "choices": ["210", "216", "220", "225"],
+  "answer_index": 1,
+  "explanation": "36 × 6 = 216",
+  "tags": ["حساب"]
+},
+{
+  "id": 335,
+  "type": "math",
+  "question": "17 × 17 = ؟",
+  "choices": ["281", "288", "289", "290"],
+  "answer_index": 2,
+  "explanation": "17 × 17 = 289",
+  "tags": ["حساب"]
+},
+{
+  "id": 336,
+  "type": "math",
+  "question": "23 × 19 = ؟",
+  "choices": ["427", "433", "437", "441"],
+  "answer_index": 3,
+  "explanation": "23 × 19 = 437",
+  "tags": ["حساب"]
+},
+{
+  "id": 337,
+  "type": "math",
+  "question": "15 × 28 = ؟",
+  "choices": ["410", "415", "420", "425"],
+  "answer_index": 2,
+  "explanation": "15 × 28 = 420",
+  "tags": ["حساب"]
+},
+{
+  "id": 338,
+  "type": "math",
+  "question": "90 × 9 = ؟",
+  "choices": ["780", "800", "810", "820"],
+  "answer_index": 2,
+  "explanation": "90 × 9 = 810",
+  "tags": ["حساب"]
+},
+{
+  "id": 339,
+  "type": "math",
+  "question": "44 × 12 = ؟",
+  "choices": ["520", "528", "532", "540"],
+  "answer_index": 1,
+  "explanation": "44 × 12 = 528",
+  "tags": ["حساب"]
+},
+{
+  "id": 340,
+  "type": "math",
+  "question": "75 × 12 = ؟",
+  "choices": ["880", "890", "900", "910"],
+  "answer_index": 2,
+  "explanation": "75 × 12 = 900",
+  "tags": ["حساب"]
+},
+{
+  "id": 341,
+  "type": "math",
+  "question": "150 × 3 = ؟",
+  "choices": ["440", "450", "460", "470"],
+  "answer_index": 1,
+  "explanation": "150 × 3 = 450",
+  "tags": ["حساب"]
+},
+{
+  "id": 342,
+  "type": "math",
+  "question": "28 × 16 = ؟",
+  "choices": ["436", "438", "448", "456"],
+  "answer_index": 2,
+  "explanation": "28 × 16 = 448",
+  "tags": ["حساب"]
+},
+{
+  "id": 343,
+  "type": "math",
+  "question": "33 × 15 = ؟",
+  "choices": ["480", "485", "490", "495"],
+  "answer_index": 3,
+  "explanation": "33 × 15 = 495",
+  "tags": ["حساب"]
+},
+{
+  "id": 344,
+  "type": "math",
+  "question": "60 × 14 = ؟",
+  "choices": ["820", "830", "840", "850"],
+  "answer_index": 2,
+  "explanation": "60 × 14 = 840",
+  "tags": ["حساب"]
+},
+{
+  "id": 345,
+  "type": "math",
+  "question": "48 × 22 = ؟",
+  "choices": ["1046", "1056", "1066", "1076"],
+  "answer_index": 1,
+  "explanation": "48 × 22 = 1056",
+  "tags": ["حساب"]
+},
+{
+  "id": 346,
+  "type": "math",
+  "question": "85 × 7 = ؟",
+  "choices": ["585", "590", "595", "600"],
+  "answer_index": 0,
+  "explanation": "85 × 7 = 595",
+  "tags": ["حساب"]
+},
+{
+  "id": 347,
+  "type": "math",
+  "question": "99 × 8 = ؟",
+  "choices": ["782", "786", "792", "798"],
+  "answer_index": 2,
+  "explanation": "99 × 8 = 792",
+  "tags": ["حساب"]
+},
+{
+  "id": 348,
+  "type": "math",
+  "question": "77 × 13 = ؟",
+  "choices": ["991", "1001", "1011", "1021"],
+  "answer_index": 1,
+  "explanation": "77 × 13 = 1001",
+  "tags": ["حساب"]
+},
+{
+  "id": 349,
+  "type": "math",
+  "question": "120 × 12 = ؟",
+  "choices": ["1420", "1430", "1440", "1450"],
+  "answer_index": 2,
+  "explanation": "120 × 12 = 1440",
+  "tags": ["حساب"]
+},
+{
+  "id": 350,
+  "type": "math",
+  "question": "66 × 15 = ؟",
+  "choices": ["980", "990", "1000", "1010"],
+  "answer_index": 1,
+  "explanation": "66 × 15 = 990",
+  "tags": ["حساب"]
+}
+{
+  "id": 351,
+  "type": "math",
+  "question": "12 × 15 = ؟",
+  "choices": ["170", "175", "180", "185"],
+  "answer_index": 2,
+  "explanation": "12 × 15 = 180",
+  "tags": ["حساب"]
+},
+{
+  "id": 352,
+  "type": "math",
+  "question": "25 × 25 = ؟",
+  "choices": ["615", "620", "625", "630"],
+  "answer_index": 2,
+  "explanation": "25 × 25 = 625",
+  "tags": ["مربع"]
+},
+{
+  "id": 353,
+  "type": "math",
+  "question": "14 × 19 = ؟",
+  "choices": ["258", "266", "270", "274"],
+  "answer_index": 1,
+  "explanation": "14 × 19 = 266",
+  "tags": ["حساب"]
+},
+{
+  "id": 354,
+  "type": "math",
+  "question": "28 × 18 = ؟",
+  "choices": ["494", "502", "504", "512"],
+  "answer_index": 2,
+  "explanation": "28 × 18 = 504",
+  "tags": ["حساب"]
+},
+{
+  "id": 355,
+  "type": "math",
+  "question": "32 × 14 = ؟",
+  "choices": ["438", "444", "448", "454"],
+  "answer_index": 2,
+  "explanation": "32 × 14 = 448",
+  "tags": ["حساب"]
+},
+{
+  "id": 356,
+  "type": "math",
+  "question": "45 × 20 = ؟",
+  "choices": ["880", "890", "900", "910"],
+  "answer_index": 2,
+  "explanation": "45 × 20 = 900",
+  "tags": ["حساب"]
+},
+{
+  "id": 357,
+  "type": "math",
+  "question": "60 × 22 = ؟",
+  "choices": ["1300", "1310", "1320", "1330"],
+  "answer_index": 2,
+  "explanation": "60 × 22 = 1320",
+  "tags": ["حساب"]
+},
+{
+  "id": 358,
+  "type": "math",
+  "question": "75 × 15 = ؟",
+  "choices": ["1115", "1125", "1135", "1145"],
+  "answer_index": 1,
+  "explanation": "75 × 15 = 1125",
+  "tags": ["حساب"]
+},
+{
+  "id": 359,
+  "type": "math",
+  "question": "44 × 16 = ؟",
+  "choices": ["696", "704", "712", "720"],
+  "answer_index": 1,
+  "explanation": "44 × 16 = 704",
+  "tags": ["حساب"]
+},
+{
+  "id": 360,
+  "type": "math",
+  "question": "85 × 14 = ؟",
+  "choices": ["1160", "1180", "1190", "1200"],
+  "answer_index": 1,
+  "explanation": "85 × 14 = 1190",
+  "tags": ["حساب"]
+},
+{
+  "id": 361,
+  "type": "math",
+  "question": "99 × 9 = ؟",
+  "choices": ["881", "882", "889", "891"],
+  "answer_index": 3,
+  "explanation": "99 × 9 = 891",
+  "tags": ["حساب"]
+},
+{
+  "id": 362,
+  "type": "math",
+  "question": "33 × 33 = ؟",
+  "choices": ["1079", "1089", "1099", "1109"],
+  "answer_index": 1,
+  "explanation": "33 × 33 = 1089",
+  "tags": ["مربع"]
+},
+{
+  "id": 363,
+  "type": "math",
+  "question": "42 × 24 = ؟",
+  "choices": ["1008", "1018", "1028", "1038"],
+  "answer_index": 0,
+  "explanation": "42 × 24 = 1008",
+  "tags": ["حساب"]
+},
+{
+  "id": 364,
+  "type": "math",
+  "question": "19 × 28 = ؟",
+  "choices": ["522", "528", "532", "538"],
+  "answer_index": 1,
+  "explanation": "19 × 28 = 532",
+  "tags": ["حساب"]
+},
+{
+  "id": 365,
+  "type": "math",
+  "question": "64 × 12 = ؟",
+  "choices": ["764", "768", "772", "776"],
+  "answer_index": 1,
+  "explanation": "64 × 12 = 768",
+  "tags": ["حساب"]
+},
+{
+  "id": 366,
+  "type": "math",
+  "question": "120 × 14 = ؟",
+  "choices": ["1670", "1680", "1690", "1700"],
+  "answer_index": 1,
+  "explanation": "120 × 14 = 1680",
+  "tags": ["حساب"]
+},
+{
+  "id": 367,
+  "type": "math",
+  "question": "55 × 18 = ؟",
+  "choices": ["980", "985", "990", "995"],
+  "answer_index": 2,
+  "explanation": "55 × 18 = 990",
+  "tags": ["حساب"]
+},
+{
+  "id": 368,
+  "type": "math",
+  "question": "72 × 15 = ؟",
+  "choices": ["1070", "1080", "1090", "1100"],
+  "answer_index": 1,
+  "explanation": "72 × 15 = 1080",
+  "tags": ["حساب"]
+},
+{
+  "id": 369,
+  "type": "math",
+  "question": "27 × 27 = ؟",
+  "choices": ["729", "735", "739", "745"],
+  "answer_index": 0,
+  "explanation": "27 × 27 = 729",
+  "tags": ["مربع"]
+},
+{
+  "id": 370,
+  "type": "math",
+  "question": "18 × 22 = ؟",
+  "choices": ["386", "392", "396", "402"],
+  "answer_index": 1,
+  "explanation": "18 × 22 = 396",
+  "tags": ["حساب"]
+}
+{
+  "id": 371,
+  "type": "math",
+  "question": "22 × 22 = ؟",
+  "choices": ["472", "480", "484", "488"],
+  "answer_index": 2,
+  "explanation": "22 × 22 = 484",
+  "tags": ["مربع"]
+},
+{
+  "id": 372,
+  "type": "math",
+  "question": "36 × 18 = ؟",
+  "choices": ["644", "648", "652", "656"],
+  "answer_index": 1,
+  "explanation": "36 × 18 = 648",
+  "tags": ["حساب"]
+},
+{
+  "id": 373,
+  "type": "math",
+  "question": "44 × 25 = ؟",
+  "choices": ["1080", "1090", "1100", "1110"],
+  "answer_index": 2,
+  "explanation": "44 × 25 = 1100",
+  "tags": ["حساب"]
+},
+{
+  "id": 374,
+  "type": "math",
+  "question": "75 × 18 = ؟",
+  "choices": ["1340", "1350", "1360", "1370"],
+  "answer_index": 1,
+  "explanation": "75 × 18 = 1350",
+  "tags": ["حساب"]
+},
+{
+  "id": 375,
+  "type": "math",
+  "question": "88 × 14 = ؟",
+  "choices": ["1210", "1220", "1230", "1240"],
+  "answer_index": 1,
+  "explanation": "88 × 14 = 1232",
+  "tags": ["حساب"]
+},
+{
+  "id": 376,
+  "type": "math",
+  "question": "99 × 15 = ؟",
+  "choices": ["1475", "1480", "1485", "1490"],
+  "answer_index": 2,
+  "explanation": "99 × 15 = 1485",
+  "tags": ["حساب"]
+},
+{
+  "id": 377,
+  "type": "math",
+  "question": "64 × 22 = ؟",
+  "choices": ["1398", "1400", "1408", "1412"],
+  "answer_index": 2,
+  "explanation": "64 × 22 = 1408",
+  "tags": ["حساب"]
+},
+{
+  "id": 378,
+  "type": "math",
+  "question": "33 × 28 = ؟",
+  "choices": ["918", "924", "930", "936"],
+  "answer_index": 1,
+  "explanation": "33 × 28 = 924",
+  "tags": ["حساب"]
+},
+{
+  "id": 379,
+  "type": "math",
+  "question": "45 × 24 = ؟",
+  "choices": ["1070", "1080", "1090", "1100"],
+  "answer_index": 1,
+  "explanation": "45 × 24 = 1080",
+  "tags": ["حساب"]
+},
+{
+  "id": 380,
+  "type": "math",
+  "question": "120 × 18 = ؟",
+  "choices": ["2140", "2150", "2160", "2170"],
+  "answer_index": 2,
+  "explanation": "120 × 18 = 2160",
+  "tags": ["حساب"]
+},
+{
+  "id": 381,
+  "type": "math",
+  "question": "55 × 25 = ؟",
+  "choices": ["1370", "1375", "1380", "1385"],
+  "answer_index": 1,
+  "explanation": "55 × 25 = 1375",
+  "tags": ["حساب"]
+},
+{
+  "id": 382,
+  "type": "math",
+  "question": "72 × 22 = ؟",
+  "choices": ["1575", "1580", "1584", "1588"],
+  "answer_index": 2,
+  "explanation": "72 × 22 = 1584",
+  "tags": ["حساب"]
+},
+{
+  "id": 383,
+  "type": "math",
+  "question": "66 × 19 = ؟",
+  "choices": ["1244", "1250", "1254", "1258"],
+  "answer_index": 2,
+  "explanation": "66 × 19 = 1254",
+  "tags": ["حساب"]
+},
+{
+  "id": 384,
+  "type": "math",
+  "question": "85 × 16 = ؟",
+  "choices": ["1350", "1355", "1360", "1365"],
+  "answer_index": 2,
+  "explanation": "85 × 16 = 1360",
+  "tags": ["حساب"]
+},
+{
+  "id": 385,
+  "type": "math",
+  "question": "48 × 28 = ؟",
+  "choices": ["1330", "1340", "1344", "1350"],
+  "answer_index": 2,
+  "explanation": "48 × 28 = 1344",
+  "tags": ["حساب"]
+},
+{
+  "id": 386,
+  "type": "math",
+  "question": "19 × 32 = ؟",
+  "choices": ["605", "608", "610", "612"],
+  "answer_index": 1,
+  "explanation": "19 × 32 = 608",
+  "tags": ["حساب"]
+},
+{
+  "id": 387,
+  "type": "math",
+  "question": "77 × 18 = ؟",
+  "choices": ["1370", "1380", "1386", "1390"],
+  "answer_index": 2,
+  "explanation": "77 × 18 = 1386",
+  "tags": ["حساب"]
+},
+{
+  "id": 388,
+  "type": "math",
+  "question": "120 × 22 = ؟",
+  "choices": ["2620", "2630", "2640", "2650"],
+  "answer_index": 2,
+  "explanation": "120 × 22 = 2640",
+  "tags": ["حساب"]
+},
+{
+  "id": 389,
+  "type": "math",
+  "question": "33 × 33 = ؟",
+  "choices": ["1080", "1085", "1089", "1095"],
+  "answer_index": 2,
+  "explanation": "33 × 33 = 1089",
+  "tags": ["مربع"]
+},
+{
+  "id": 390,
+  "type": "math",
+  "question": "44 × 32 = ؟",
+  "choices": ["1400", "1405", "1408", "1410"],
+  "answer_index": 2,
+  "explanation": "44 × 32 = 1408",
+  "tags": ["حساب"]
+},
+{
+  "id": 391,
+  "type": "math",
+  "question": "99 × 22 = ؟",
+  "choices": ["2170", "2175", "2178", "2180"],
+  "answer_index": 2,
+  "explanation": "99 × 22 = 2178",
+  "tags": ["حساب"]
+},
+{
+  "id": 392,
+  "type": "math",
+  "question": "66 × 28 = ؟",
+  "choices": ["1820", "1825", "1840", "1845"],
+  "answer_index": 2,
+  "explanation": "66 × 28 = 1848",
+  "tags": ["حساب"]
+},
+{
+  "id": 393,
+  "type": "math",
+  "question": "88 × 22 = ؟",
+  "choices": ["1920", "1930", "1936", "1940"],
+  "answer_index": 2,
+  "explanation": "88 × 22 = 1936",
+  "tags": ["حساب"]
+},
+{
+  "id": 394,
+  "type": "math",
+  "question": "75 × 28 = ؟",
+  "choices": ["2090", "2100", "2105", "2110"],
+  "answer_index": 1,
+  "explanation": "75 × 28 = 2100",
+  "tags": ["حساب"]
+},
+{
+  "id": 395,
+  "type": "math",
+  "question": "32 × 32 = ؟",
+  "choices": ["1020", "1024", "1030", "1035"],
+  "answer_index": 1,
+  "explanation": "32 × 32 = 1024",
+  "tags": ["مربع"]
+},
+{
+  "id": 396,
+  "type": "math",
+  "question": "27 × 28 = ؟",
+  "choices": ["754", "755", "756", "757"],
+  "answer_index": 2,
+  "explanation": "27 × 28 = 756",
+  "tags": ["حساب"]
+},
+{
+  "id": 397,
+  "type": "math",
+  "question": "45 × 28 = ؟",
+  "choices": ["1255", "1260", "1265", "1270"],
+  "answer_index": 1,
+  "explanation": "45 × 28 = 1260",
+  "tags": ["حساب"]
+},
+{
+  "id": 398,
+  "type": "math",
+  "question": "72 × 28 = ؟",
+  "choices": ["2010", "2015", "2016", "2020"],
+  "answer_index": 2,
+  "explanation": "72 × 28 = 2016",
+  "tags": ["حساب"]
+},
+{
+  "id": 399,
+  "type": "math",
+  "question": "85 × 22 = ؟",
+  "choices": ["1865", "1870", "1875", "1880"],
+  "answer_index": 1,
+  "explanation": "85 × 22 = 1870",
+  "tags": ["حساب"]
+},
+{
+  "id": 400,
+  "type": "math",
+  "question": "99 × 25 = ؟",
+  "choices": ["2470", "2475", "2480", "2485"],
+  "answer_index": 1,
+  "explanation": "99 × 25 = 2475",
+  "tags": ["حساب"]
+},
+{
+  "id": 401,
+  "type": "math",
+  "question": "120 × 25 = ؟",
+  "choices": ["2990", "3000", "3010", "3020"],
+  "answer_index": 1,
+  "explanation": "120 × 25 = 3000",
+  "tags": ["حساب"]
+},
+{
+  "id": 402,
+  "type": "math",
+  "question": "66 × 30 = ؟",
+  "choices": ["1970", "1975", "1980", "1985"],
+  "answer_index": 2,
+  "explanation": "66 × 30 = 1980",
+  "tags": ["حساب"]
+},
+{
+  "id": 403,
+  "type": "math",
+  "question": "33 × 40 = ؟",
+  "choices": ["1310", "1320", "1330", "1340"],
+  "answer_index": 1,
+  "explanation": "33 × 40 = 1320",
+  "tags": ["حساب"]
+},
+{
+  "id": 404,
+  "type": "math",
+  "question": "72 × 32 = ؟",
+  "choices": ["2290", "2300", "2304", "2310"],
+  "answer_index": 2,
+  "explanation": "72 × 32 = 2304",
+  "tags": ["حساب"]
+},
+{
+  "id": 405,
+  "type": "math",
+  "question": "28 × 44 = ؟",
+  "choices": ["1220", "1230", "1232", "1240"],
+  "answer_index": 2,
+  "explanation": "28 × 44 = 1232",
+  "tags": ["حساب"]
+},
+{
+  "id": 406,
+  "type": "math",
+  "question": "88 × 28 = ؟",
+  "choices": ["2460", "2464", "2470", "2480"],
+  "answer_index": 1,
+  "explanation": "88 × 28 = 2464",
+  "tags": ["حساب"]
+},
+{
+  "id": 407,
+  "type": "math",
+  "question": "55 × 44 = ؟",
+  "choices": ["2400", "2410", "2420", "2425"],
+  "answer_index": 2,
+  "explanation": "55 × 44 = 2420",
+  "tags": ["حساب"]
+},
+{
+  "id": 408,
+  "type": "math",
+  "question": "33 × 45 = ؟",
+  "choices": ["1470", "1480", "1485", "1490"],
+  "answer_index": 2,
+  "explanation": "33 × 45 = 1485",
+  "tags": ["حساب"]
+},
+{
+  "id": 409,
+  "type": "math",
+  "question": "99 × 30 = ؟",
+  "choices": ["2960", "2970", "2975", "2980"],
+  "answer_index": 1,
+  "explanation": "99 × 30 = 2970",
+  "tags": ["حساب"]
+},
+{
+  "id": 410,
+  "type": "math",
+  "question": "72 × 36 = ؟",
+  "choices": ["2580", "2590", "2592", "2600"],
+  "answer_index": 2,
+  "explanation": "72 × 36 = 2592",
+  "tags": ["حساب"]
+},
+{
+  "id": 411,
+  "type": "math",
+  "question": "45 × 45 = ؟",
+  "choices": ["2020", "2025", "2030", "2040"],
+  "answer_index": 1,
+  "explanation": "45 × 45 = 2025",
+  "tags": ["مربع"]
+},
+{
+  "id": 412,
+  "type": "math",
+  "question": "120 × 28 = ؟",
+  "choices": ["3350", "3360", "3365", "3370"],
+  "answer_index": 1,
+  "explanation": "120 × 28 = 3360",
+  "tags": ["حساب"]
+},
+{
+  "id": 413,
+  "type": "math",
+  "question": "66 × 35 = ؟",
+  "choices": ["2300", "2310", "2315", "2320"],
+  "answer_index": 1,
+  "explanation": "66 × 35 = 2310",
+  "tags": ["حساب"]
+},
+{
+  "id": 414,
+  "type": "math",
+  "question": "88 × 30 = ؟",
+  "choices": ["2630", "2640", "2645", "2650"],
+  "answer_index": 1,
+  "explanation": "88 × 30 = 2640",
+  "tags": ["حساب"]
+},
+{
+  "id": 415,
+  "type": "math",
+  "question": "99 × 35 = ؟",
+  "choices": ["3460", "3465", "3470", "3475"],
+  "answer_index": 1,
+  "explanation": "99 × 35 = 3465",
+  "tags": ["حساب"]
+},
+{
+  "id": 416,
+  "type": "math",
+  "question": "75 × 36 = ؟",
+  "choices": ["2690", "2695", "2700", "2705"],
+  "answer_index": 2,
+  "explanation": "75 × 36 = 2700",
+  "tags": ["حساب"]
+},
+{
+  "id": 417,
+  "type": "math",
+  "question": "44 × 40 = ؟",
+  "choices": ["1750", "1760", "1765", "1770"],
+  "answer_index": 1,
+  "explanation": "44 × 40 = 1760",
+  "tags": ["حساب"]
+},
+{
+  "id": 418,
+  "type": "math",
+  "question": "33 × 55 = ؟",
+  "choices": ["1800", "1810", "1815", "1820"],
+  "answer_index": 2,
+  "explanation": "33 × 55 = 1815",
+  "tags": ["حساب"]
+},
+{
+  "id": 419,
+  "type": "math",
+  "question": "60 × 60 = ؟",
+  "choices": ["3590", "3600", "3610", "3620"],
+  "answer_index": 1,
+  "explanation": "60 × 60 = 3600",
+  "tags": ["مربع"]
+},
+{
+  "id": 420,
+  "type": "math",
+  "question": "120 × 35 = ؟",
+  "choices": ["4190", "4200", "4210", "4220"],
+  "answer_index": 1,
+  "explanation": "120 × 35 = 4200",
+  "tags": ["حساب"]
+}
+{
+  "id": 421,
+  "type": "math",
+  "question": "77 × 22 = ؟",
+  "choices": ["1680", "1690", "1694", "1700"],
+  "answer_index": 2,
+  "explanation": "77 × 22 = 1694",
+  "tags": ["حساب"]
+},
+{
+  "id": 422,
+  "type": "math",
+  "question": "85 × 28 = ؟",
+  "choices": ["2375", "2380", "2385", "2390"],
+  "answer_index": 1,
+  "explanation": "85 × 28 = 2380",
+  "tags": ["حساب"]
+},
+{
+  "id": 423,
+  "type": "math",
+  "question": "99 × 40 = ؟",
+  "choices": ["3950", "3960", "3965", "3970"],
+  "answer_index": 1,
+  "explanation": "99 × 40 = 3960",
+  "tags": ["حساب"]
+},
+{
+  "id": 424,
+  "type": "math",
+  "question": "66 × 45 = ؟",
+  "choices": ["2960", "2970", "2975", "2980"],
+  "answer_index": 1,
+  "explanation": "66 × 45 = 2970",
+  "tags": ["حساب"]
+},
+{
+  "id": 425,
+  "type": "math",
+  "question": "120 × 40 = ؟",
+  "choices": ["4790", "4800", "4810", "4820"],
+  "answer_index": 1,
+  "explanation": "120 × 40 = 4800",
+  "tags": ["حساب"]
+},
+{
+  "id": 426,
+  "type": "math",
+  "question": "33 × 60 = ؟",
+  "choices": ["1970", "1980", "1985", "1990"],
+  "answer_index": 1,
+  "explanation": "33 × 60 = 1980",
+  "tags": ["حساب"]
+},
+{
+  "id": 427,
+  "type": "math",
+  "question": "72 × 45 = ؟",
+  "choices": ["3230", "3235", "3240", "3245"],
+  "answer_index": 2,
+  "explanation": "72 × 45 = 3240",
+  "tags": ["حساب"]
+},
+{
+  "id": 428,
+  "type": "math",
+  "question": "44 × 55 = ؟",
+  "choices": ["2400", "2410", "2420", "2425"],
+  "answer_index": 2,
+  "explanation": "44 × 55 = 2420",
+  "tags": ["حساب"]
+},
+{
+  "id": 429,
+  "type": "math",
+  "question": "99 × 45 = ؟",
+  "choices": ["4440", "4450", "4455", "4460"],
+  "answer_index": 2,
+  "explanation": "99 × 45 = 4455",
+  "tags": ["حساب"]
+},
+{
+  "id": 430,
+  "type": "math",
+  "question": "75 × 48 = ؟",
+  "choices": ["3590", "3600", "3605", "3610"],
+  "answer_index": 1,
+  "explanation": "75 × 48 = 3600",
+  "tags": ["حساب"]
+},
+{
+  "id": 431,
+  "type": "math",
+  "question": "88 × 45 = ؟",
+  "choices": ["3940", "3950", "3960", "3965"],
+  "answer_index": 1,
+  "explanation": "88 × 45 = 3960",
+  "tags": ["حساب"]
+},
+{
+  "id": 432,
+  "type": "math",
+  "question": "60 × 72 = ؟",
+  "choices": ["4310", "4320", "4330", "4340"],
+  "answer_index": 1,
+  "explanation": "60 × 72 = 4320",
+  "tags": ["حساب"]
+},
+{
+  "id": 433,
+  "type": "math",
+  "question": "33 × 75 = ؟",
+  "choices": ["2460", "2470", "2475", "2480"],
+  "answer_index": 2,
+  "explanation": "33 × 75 = 2475",
+  "tags": ["حساب"]
+},
+{
+  "id": 434,
+  "type": "math",
+  "question": "120 × 45 = ؟",
+  "choices": ["5390", "5400", "5410", "5420"],
+  "answer_index": 1,
+  "explanation": "120 × 45 = 5400",
+  "tags": ["حساب"]
+},
+{
+  "id": 435,
+  "type": "math",
+  "question": "66 × 55 = ؟",
+  "choices": ["3620", "3630", "3635", "3640"],
+  "answer_index": 1,
+  "explanation": "66 × 55 = 3630",
+  "tags": ["حساب"]
+},
+{
+  "id": 436,
+  "type": "math",
+  "question": "99 × 50 = ؟",
+  "choices": ["4940", "4950", "4955", "4960"],
+  "answer_index": 1,
+  "explanation": "99 × 50 = 4950",
+  "tags": ["حساب"]
+},
+{
+  "id": 437,
+  "type": "math",
+  "question": "44 × 66 = ؟",
+  "choices": ["2900", "2904", "2910", "2915"],
+  "answer_index": 1,
+  "explanation": "44 × 66 = 2904",
+  "tags": ["حساب"]
+},
+{
+  "id": 438,
+  "type": "math",
+  "question": "72 × 60 = ؟",
+  "choices": ["4310", "4320", "4330", "4340"],
+  "answer_index": 1,
+  "explanation": "72 × 60 = 4320",
+  "tags": ["حساب"]
+},
+{
+  "id": 439,
+  "type": "math",
+  "question": "85 × 55 = ؟",
+  "choices": ["4660", "4665", "4670", "4675"],
+  "answer_index": 1,
+  "explanation": "85 × 55 = 4675",
+  "tags": ["حساب"]
+},
+{
+  "id": 440,
+  "type": "math",
+  "question": "120 × 50 = ؟",
+  "choices": ["5990", "6000", "6010", "6020"],
+  "answer_index": 1,
+  "explanation": "120 × 50 = 6000",
+  "tags": ["حساب"]
+},
+{
+  "id": 441,
+  "type": "math",
+  "question": "33 × 90 = ؟",
+  "choices": ["2960", "2970", "2975", "2980"],
+  "answer_index": 1,
+  "explanation": "33 × 90 = 2970",
+  "tags": ["حساب"]
+},
+{
+  "id": 442,
+  "type": "math",
+  "question": "99 × 60 = ؟",
+  "choices": ["5930", "5940", "5945", "5950"],
+  "answer_index": 1,
+  "explanation": "99 × 60 = 5940",
+  "tags": ["حساب"]
+},
+{
+  "id": 443,
+  "type": "math",
+  "question": "66 × 66 = ؟",
+  "choices": ["4320", "4330", "4350", "4356"],
+  "answer_index": 3,
+  "explanation": "66 × 66 = 4356",
+  "tags": ["مربع"]
+},
+{
+  "id": 444,
+  "type": "math",
+  "question": "75 × 72 = ؟",
+  "choices": ["5390", "5400", "5410", "5420"],
+  "answer_index": 1,
+  "explanation": "75 × 72 = 5400",
+  "tags": ["حساب"]
+},
+{
+  "id": 445,
+  "type": "math",
+  "question": "88 × 66 = ؟",
+  "choices": ["5800", "5810", "5808", "5820"],
+  "answer_index": 2,
+  "explanation": "88 × 66 = 5808",
+  "tags": ["حساب"]
+},
+{
+  "id": 446,
+  "type": "math",
+  "question": "120 × 60 = ؟",
+  "choices": ["7190", "7200", "7210", "7220"],
+  "answer_index": 1,
+  "explanation": "120 × 60 = 7200",
+  "tags": ["حساب"]
+},
+{
+  "id": 447,
+  "type": "math",
+  "question": "33 × 99 = ؟",
+  "choices": ["3260", "3265", "3267", "3270"],
+  "answer_index": 2,
+  "explanation": "33 × 99 = 3267",
+  "tags": ["حساب"]
+},
+{
+  "id": 448,
+  "type": "math",
+  "question": "55 × 88 = ؟",
+  "choices": ["4820", "4840", "4845", "4850"],
+  "answer_index": 1,
+  "explanation": "55 × 88 = 4840",
+  "tags": ["حساب"]
+},
+{
+  "id": 449,
+  "type": "math",
+  "question": "72 × 72 = ؟",
+  "choices": ["5180", "5184", "5190", "5200"],
+  "answer_index": 1,
+  "explanation": "72 × 72 = 5184",
+  "tags": ["مربع"]
+},
+{
+  "id": 450,
+  "type": "math",
+  "question": "99 × 72 = ؟",
+  "choices": ["7120", "7125", "7128", "7130"],
+  "answer_index": 2,
+  "explanation": "99 × 72 = 7128",
+  "tags": ["حساب"]
+},
+{
+  "id": 451,
+  "type": "math",
+  "question": "85 × 75 = ؟",
+  "choices": ["6370", "6375", "6380", "6385"],
+  "answer_index": 1,
+  "explanation": "85 × 75 = 6375",
+  "tags": ["حساب"]
+},
+{
+  "id": 452,
+  "type": "math",
+  "question": "44 × 99 = ؟",
+  "choices": ["4340", "4350", "4356", "4360"],
+  "answer_index": 2,
+  "explanation": "44 × 99 = 4356",
+  "tags": ["حساب"]
+},
+{
+  "id": 453,
+  "type": "math",
+  "question": "120 × 72 = ؟",
+  "choices": ["8620", "8630", "8640", "8650"],
+  "answer_index": 2,
+  "explanation": "120 × 72 = 8640",
+  "tags": ["حساب"]
+},
+{
+  "id": 454,
+  "type": "math",
+  "question": "66 × 88 = ؟",
+  "choices": ["5800", "5805", "5808", "5810"],
+  "answer_index": 2,
+  "explanation": "66 × 88 = 5808",
+  "tags": ["حساب"]
+},
+{
+  "id": 455,
+  "type": "math",
+  "question": "75 × 99 = ؟",
+  "choices": ["7410", "7420", "7425", "7430"],
+  "answer_index": 2,
+  "explanation": "75 × 99 = 7425",
+  "tags": ["حساب"]
+},
+{
+  "id": 456,
+  "type": "math",
+  "question": "88 × 99 = ؟",
+  "choices": ["8710", "8715", "8712", "8720"],
+  "answer_index": 2,
+  "explanation": "88 × 99 = 8712",
+  "tags": ["حساب"]
+},
+{
+  "id": 457,
+  "type": "math",
+  "question": "120 × 75 = ؟",
+  "choices": ["8990", "9000", "9010", "9020"],
+  "answer_index": 1,
+  "explanation": "120 × 75 = 9000",
+  "tags": ["حساب"]
+},
+{
+  "id": 458,
+  "type": "math",
+  "question": "99 × 88 = ؟",
+  "choices": ["8710", "8712", "8715", "8720"],
+  "answer_index": 1,
+  "explanation": "99 × 88 = 8712",
+  "tags": ["حساب"]
+},
+{
+  "id": 459,
+  "type": "math",
+  "question": "66 × 99 = ؟",
+  "choices": ["6530", "6534", "6536", "6540"],
+  "answer_index": 1,
+  "explanation": "66 × 99 = 6534",
+  "tags": ["حساب"]
+},
+{
+  "id": 460,
+  "type": "math",
+  "question": "120 × 99 = ؟",
+  "choices": ["11870", "11880", "11890", "11900"],
+  "answer_index": 1,
+  "explanation": "120 × 99 = 11880",
+  "tags": ["حساب"]
+}
+{
+  "id": 461,
+  "type": "math",
+  "question": "33 × 120 = ؟",
+  "choices": ["3950", "3960", "3965", "3970"],
+  "answer_index": 1,
+  "explanation": "33 × 120 = 3960",
+  "tags": ["حساب"]
+},
+{
+  "id": 462,
+  "type": "math",
+  "question": "75 × 120 = ؟",
+  "choices": ["8990", "9000", "9010", "9020"],
+  "answer_index": 1,
+  "explanation": "75 × 120 = 9000",
+  "tags": ["حساب"]
+},
+{
+  "id": 463,
+  "type": "math",
+  "question": "88 × 120 = ؟",
+  "choices": ["10550", "10560", "10570", "10580"],
+  "answer_index": 1,
+  "explanation": "88 × 120 = 10560",
+  "tags": ["حساب"]
+},
+{
+  "id": 464,
+  "type": "math",
+  "question": "99 × 120 = ؟",
+  "choices": ["11870", "11880", "11890", "11900"],
+  "answer_index": 1,
+  "explanation": "99 × 120 = 11880",
+  "tags": ["حساب"]
+},
+{
+  "id": 465,
+  "type": "math",
+  "question": "66 × 120 = ؟",
+  "choices": ["7910", "7920", "7930", "7940"],
+  "answer_index": 1,
+  "explanation": "66 × 120 = 7920",
+  "tags": ["حساب"]
+},
+{
+  "id": 466,
+  "type": "math",
+  "question": "150 × 22 = ؟",
+  "choices": ["3290", "3300", "3310", "3320"],
+  "answer_index": 1,
+  "explanation": "150 × 22 = 3300",
+  "tags": ["حساب"]
+},
+{
+  "id": 467,
+  "type": "math",
+  "question": "200 × 18 = ؟",
+  "choices": ["3590", "3600", "3610", "3620"],
+  "answer_index": 1,
+  "explanation": "200 × 18 = 3600",
+  "tags": ["حساب"]
+},
+{
+  "id": 468,
+  "type": "math",
+  "question": "250 × 14 = ؟",
+  "choices": ["3490", "3500", "3510", "3520"],
+  "answer_index": 1,
+  "explanation": "250 × 14 = 3500",
+  "tags": ["حساب"]
+},
+{
+  "id": 469,
+  "type": "math",
+  "question": "300 × 12 = ؟",
+  "choices": ["3590", "3600", "3610", "3620"],
+  "answer_index": 1,
+  "explanation": "300 × 12 = 3600",
+  "tags": ["حساب"]
+},
+{
+  "id": 470,
+  "type": "math",
+  "question": "400 × 11 = ؟",
+  "choices": ["4390", "4400", "4410", "4420"],
+  "answer_index": 1,
+  "explanation": "400 × 11 = 4400",
+  "tags": ["حساب"]
+},
+{
+  "id": 471,
+  "type": "math",
+  "question": "500 × 9 = ؟",
+  "choices": ["4490", "4500", "4510", "4520"],
+  "answer_index": 1,
+  "explanation": "500 × 9 = 4500",
+  "tags": ["حساب"]
+},
+{
+  "id": 472,
+  "type": "math",
+  "question": "600 × 8 = ؟",
+  "choices": ["4790", "4800", "4810", "4820"],
+  "answer_index": 1,
+  "explanation": "600 × 8 = 4800",
+  "tags": ["حساب"]
+},
+{
+  "id": 473,
+  "type": "math",
+  "question": "700 × 7 = ؟",
+  "choices": ["4890", "4900", "4910", "4920"],
+  "answer_index": 1,
+  "explanation": "700 × 7 = 4900",
+  "tags": ["حساب"]
+},
+{
+  "id": 474,
+  "type": "math",
+  "question": "800 × 6 = ؟",
+  "choices": ["4790", "4800", "4810", "4820"],
+  "answer_index": 1,
+  "explanation": "800 × 6 = 4800",
+  "tags": ["حساب"]
+},
+{
+  "id": 475,
+  "type": "math",
+  "question": "900 × 5 = ؟",
+  "choices": ["4490", "4500", "4510", "4520"],
+  "answer_index": 1,
+  "explanation": "900 × 5 = 4500",
+  "tags": ["حساب"]
+},
+{
+  "id": 476,
+  "type": "math",
+  "question": "1000 × 4 = ؟",
+  "choices": ["3990", "4000", "4010", "4020"],
+  "answer_index": 1,
+  "explanation": "1000 × 4 = 4000",
+  "tags": ["حساب"]
+},
+{
+  "id": 477,
+  "type": "math",
+  "question": "1100 × 3 = ؟",
+  "choices": ["3290", "3300", "3310", "3320"],
+  "answer_index": 1,
+  "explanation": "1100 × 3 = 3300",
+  "tags": ["حساب"]
+},
+{
+  "id": 478,
+  "type": "math",
+  "question": "1200 × 2 = ؟",
+  "choices": ["2390", "2400", "2410", "2420"],
+  "answer_index": 1,
+  "explanation": "1200 × 2 = 2400",
+  "tags": ["حساب"]
+},
+{
+  "id": 479,
+  "type": "math",
+  "question": "1500 × 2 = ؟",
+  "choices": ["2990", "3000", "3010", "3020"],
+  "answer_index": 1,
+  "explanation": "1500 × 2 = 3000",
+  "tags": ["حساب"]
+},
+{
+  "id": 480,
+  "type": "math",
+  "question": "2000 × 2 = ؟",
+  "choices": ["3990", "4000", "4010", "4020"],
+  "answer_index": 1,
+  "explanation": "2000 × 2 = 4000",
+  "tags": ["حساب"]
+},
+{
+  "id": 481,
+  "type": "math",
+  "question": "2500 × 2 = ؟",
+  "choices": ["4990", "5000", "5010", "5020"],
+  "answer_index": 1,
+  "explanation": "2500 × 2 = 5000",
+  "tags": ["حساب"]
+},
+{
+  "id": 482,
+  "type": "math",
+  "question": "3000 × 2 = ؟",
+  "choices": ["5990", "6000", "6010", "6020"],
+  "answer_index": 1,
+  "explanation": "3000 × 2 = 6000",
+  "tags": ["حساب"]
+},
+{
+  "id": 483,
+  "type": "math",
+  "question": "3500 × 2 = ؟",
+  "choices": ["6990", "7000", "7010", "7020"],
+  "answer_index": 1,
+  "explanation": "3500 × 2 = 7000",
+  "tags": ["حساب"]
+},
+{
+  "id": 484,
+  "type": "math",
+  "question": "4000 × 2 = ؟",
+  "choices": ["7990", "8000", "8010", "8020"],
+  "answer_index": 1,
+  "explanation": "4000 × 2 = 8000",
+  "tags": ["حساب"]
+},
+{
+  "id": 485,
+  "type": "math",
+  "question": "4500 × 2 = ؟",
+  "choices": ["8990", "9000", "9010", "9020"],
+  "answer_index": 1,
+  "explanation": "4500 × 2 = 9000",
+  "tags": ["حساب"]
+},
+{
+  "id": 486,
+  "type": "math",
+  "question": "5000 × 2 = ؟",
+  "choices": ["9990", "10000", "10010", "10020"],
+  "answer_index": 1,
+  "explanation": "5000 × 2 = 10000",
+  "tags": ["حساب"]
+},
+{
+  "id": 487,
+  "type": "math",
+  "question": "6000 × 2 = ؟",
+  "choices": ["11990", "12000", "12010", "12020"],
+  "answer_index": 1,
+  "explanation": "6000 × 2 = 12000",
+  "tags": ["حساب"]
+},
+{
+  "id": 488,
+  "type": "math",
+  "question": "7000 × 2 = ؟",
+  "choices": ["13990", "14000", "14010", "14020"],
+  "answer_index": 1,
+  "explanation": "7000 × 2 = 14000",
+  "tags": ["حساب"]
+},
+{
+  "id": 489,
+  "type": "math",
+  "question": "8000 × 2 = ؟",
+  "choices": ["15990", "16000", "16010", "16020"],
+  "answer_index": 1,
+  "explanation": "8000 × 2 = 16000",
+  "tags": ["حساب"]
+},
+{
+  "id": 490,
+  "type": "math",
+  "question": "9000 × 2 = ؟",
+  "choices": ["17990", "18000", "18010", "18020"],
+  "answer_index": 1,
+  "explanation": "9000 × 2 = 18000",
+  "tags": ["حساب"]
+},
+{
+  "id": 491,
+  "type": "math",
+  "question": "10000 × 2 = ؟",
+  "choices": ["19990", "20000", "20010", "20020"],
+  "answer_index": 1,
+  "explanation": "10000 × 2 = 20000",
+  "tags": ["حساب"]
+},
+{
+  "id": 492,
+  "type": "math",
+  "question": "15000 × 2 = ؟",
+  "choices": ["29990", "30000", "30010", "30020"],
+  "answer_index": 1,
+  "explanation": "15000 × 2 = 30000",
+  "tags": ["حساب"]
+},
+{
+  "id": 493,
+  "type": "math",
+  "question": "20000 × 2 = ؟",
+  "choices": ["39990", "40000", "40010", "40020"],
+  "answer_index": 1,
+  "explanation": "20000 × 2 = 40000",
+  "tags": ["حساب"]
+},
+{
+  "id": 494,
+  "type": "math",
+  "question": "25000 × 2 = ؟",
+  "choices": ["49990", "50000", "50010", "50020"],
+  "answer_index": 1,
+  "explanation": "25000 × 2 = 50000",
+  "tags": ["حساب"]
+},
+{
+  "id": 495,
+  "type": "math",
+  "question": "30000 × 2 = ؟",
+  "choices": ["59990", "60000", "60010", "60020"],
+  "answer_index": 1,
+  "explanation": "30000 × 2 = 60000",
+  "tags": ["حساب"]
+},
+{
+  "id": 496,
+  "type": "math",
+  "question": "35000 × 2 = ؟",
+  "choices": ["69990", "70000", "70010", "70020"],
+  "answer_index": 1,
+  "explanation": "35000 × 2 = 70000",
+  "tags": ["حساب"]
+},
+{
+  "id": 497,
+  "type": "math",
+  "question": "40000 × 2 = ؟",
+  "choices": ["79990", "80000", "80010", "80020"],
+  "answer_index": 1,
+  "explanation": "40000 × 2 = 80000",
+  "tags": ["حساب"]
+},
+{
+  "id": 498,
+  "type": "math",
+  "question": "45000 × 2 = ؟",
+  "choices": ["89990", "90000", "90010", "90020"],
+  "answer_index": 1,
+  "explanation": "45000 × 2 = 90000",
+  "tags": ["حساب"]
+},
+{
+  "id": 499,
+  "type": "math",
+  "question": "50000 × 2 = ؟",
+  "choices": ["99990", "100000", "100010", "100020"],
+  "answer_index": 1,
+  "explanation": "50000 × 2 = 100000",
+  "tags": ["حساب"]
+},
+{
+  "id": 500,
+  "type": "math",
+  "question": "60000 × 2 = ؟",
+  "choices": ["119990", "120000", "120010", "120020"],
+  "answer_index": 1,
+  "explanation": "60000 × 2 = 120000",
+  "tags": ["حساب"]
+}
+]
