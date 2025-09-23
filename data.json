@@ -4755,7 +4755,7 @@
   "explanation": "20 × 20 = 400",
   "tags": ["رياضيات"]
 }
-]
+],
 {
   "id": 301,
   "type": "math",
@@ -4845,7 +4845,7 @@
   "answer_index": 0,
   "explanation": "18 × 18 = 324",
   "tags": ["حساب"]
-}
+},
 {
   "id": 311,
   "type": "math",
@@ -4935,7 +4935,7 @@
   "answer_index": 0,
   "explanation": "22 × 11 = 242",
   "tags": ["حساب"]
-}
+},
 {
   "id": 321,
   "type": "math",
@@ -5205,7 +5205,7 @@
   "answer_index": 1,
   "explanation": "66 × 15 = 990",
   "tags": ["حساب"]
-}
+},
 {
   "id": 351,
   "type": "math",
@@ -5385,7 +5385,7 @@
   "answer_index": 1,
   "explanation": "18 × 22 = 396",
   "tags": ["حساب"]
-}
+},
 {
   "id": 371,
   "type": "math",
@@ -5835,7 +5835,7 @@
   "answer_index": 1,
   "explanation": "120 × 35 = 4200",
   "tags": ["حساب"]
-}
+},
 {
   "id": 421,
   "type": "math",
@@ -6195,7 +6195,7 @@
   "answer_index": 1,
   "explanation": "120 × 99 = 11880",
   "tags": ["حساب"]
-}
+},
 {
   "id": 461,
   "type": "math",
