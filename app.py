@@ -1,101 +1,60 @@
-import os, json, requests
-from flask import Flask, request, jsonify
+import os
+import json
+from flask import Flask, request, abort
+import telebot  # pyTelegramBotAPI
 
+# ===== إعدادات من المتغيرات البيئية =====
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")               # حط التوكن في Render > Environment
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "webhook")   # اسم مسار الويبهوك (اختاره بنفسك)
+APP_URL = os.getenv("APP_URL", "https://qiyas-bot.onrender.com")  # رابط خدمتك على Render
+
+# مسار بنك الأسئلة:
+# لو تستخدم Secret Files في Render سمِّ الملف مثلا data.json (بدون مسار)
+# بيتركب أوتوماتيك في: /etc/secrets/data.json
+DATA_PATH = os.getenv("DATA_PATH", "/etc/secrets/data.json")  # غيّره إلى data/data.json لو الملف داخل الريبو
+
+# ===== تهيئة البوت و Flask =====
+if not BOT_TOKEN:
+    raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود")
+
+bot = telebot.TeleBot(BOT_TOKEN, threaded=False, num_threads=1)
 app = Flask(__name__)
 
-# === إعدادات أساسية ===
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-API = f"https://api.telegram.org/bot{TOKEN}"
-WEBHOOK_SECRET_PATH = f"/{TOKEN}"  # نفس المسار الذي يظهر في اللوقس
-DATA_FILE = os.environ.get("DATA_FILE", "/etc/secrets/data.json")  # أو data.json داخل الريبو
-
-# حمّل بنك الأسئلة مرة واحدة عند التشغيل
-QUESTIONS = []
-def load_data():
-    global QUESTIONS
+# ===== بنك الأسئلة (اختياري) =====
+def load_questions():
     try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            QUESTIONS = json.load(f)
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
     except Exception as e:
-        print(f"[data] فشل تحميل {DATA_FILE}: {e}")
-        QUESTIONS = []
+        print(f"[WARN] فشل قراءة بنك الأسئلة: {e}")
+        return []
 
-load_data()
+QUESTIONS = load_questions()
 
-def send_message(chat_id, text, reply_markup=None):
-    payload = {"chat_id": chat_id, "text": text}
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
-    try:
-        requests.post(f"{API}/sendMessage", json=payload, timeout=10)
-    except Exception as e:
-        print(f"[tg] send_message error: {e}")
+# ===== هاندلرز بسيطة للاختبار =====
+@bot.message_handler(commands=["start", "help"])
+def handle_start(m):
+    bot.reply_to(m, "مرحبًا 👋\nالبوت شغّال ✅\nأرسل كلمة: اختبار")
 
-# === Health check ===
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "اختبار")
+def handle_test(m):
+    if not QUESTIONS:
+        bot.reply_to(m, "بنك الأسئلة فاضي أو ما انقرأ. تأكد من DATA_PATH/Secret File.")
+        return
+    q = QUESTIONS[0]
+    text = f"{q['question']}\n" + "\n".join(f"{i+1}) {c}" for i, c in enumerate(q["choices"]))
+    bot.reply_to(m, text)
+
+# ===== مسارات الويب =====
 @app.get("/")
-def root():
-    return "البوت تشتغل!", 200
+def index():
+    return "البوت شغّال ✅", 200
 
-# === نقطة الويب هوك (لا تغيّر المسار) ===
-@app.post(WEBHOOK_SECRET_PATH)
-def webhook():
-    update = request.get_json(silent=True) or {}
-    msg = (update.get("message") or update.get("edited_message")) or {}
-    chat = msg.get("chat", {})
-    chat_id = chat.get("id")
-
-    if not chat_id:
-        return jsonify(ok=True)
-
-    text = (msg.get("text") or "").strip()
-
-    # أوامر بسيطة للاختبار
-    if text.lower() in ("/start", "start", "ابدأ"):
-        send_message(chat_id, "مرحبًا! أرسل أي رقم سؤال (id) وأنا أرجع لك السؤال.")
-        return jsonify(ok=True)
-
-    # لو أرسل رقم سؤال
-    if text.isdigit():
-        qid = int(text)
-        q = next((q for q in QUESTIONS if q.get("id") == qid), None)
-        if not q:
-            send_message(chat_id, f"السؤال رقم {qid} غير موجود.")
-            return jsonify(ok=True)
-
-        # رسم الخيارات كأزرار اختيارية
-        keyboard = [[{"text": c}] for c in q.get("choices", [])]
-        reply_markup = {"keyboard": keyboard, "one_time_keyboard": True, "resize_keyboard": True}
-        send_message(chat_id, f"{q['question']}", reply_markup=reply_markup)
-        return jsonify(ok=True)
-
-    # محاولة مطابقة إجابة لو أرسل اختيار
-    # (منطق بسيط: ابحث عن آخر سؤال أرسلناه غير محفوظ بالجلسة – لأجل السرعة نجيب إجابة مباشرة إن كان النص يطابق أي اختيار)
-    # في نسخة الإنتاج استخدم تخزين جلسات.
-    try:
-        # ابحث عن سؤال يملك هذا الاختيار نصًا
-        q = next((q for q in QUESTIONS if text in q.get("choices", [])), None)
-        if q:
-            idx = q.get("answer_index", 0)
-            correct = q.get("choices", [])[idx]
-            if text == correct:
-                send_message(chat_id, f"✅ إجابة صحيحة!\nالشرح: {q.get('explanation','')}")
-            else:
-                send_message(chat_id, f"❌ الإجابة الصحيحة: {correct}\nالشرح: {q.get('explanation','')}")
-            return jsonify(ok=True)
-    except Exception as e:
-        print(f"[logic] match error: {e}")
-
-    # رد افتراضي
-    send_message(chat_id, "أرسل /start أو رقم سؤال (مثال: 10).")
-    return jsonify(ok=True)
-
-# === تعيين الويب هوك (استدعِه مرة واحدة يدويًا عبر المتصفح) ===
-@app.get("/setwebhook")
-def set_webhook():
-    base_url = os.environ.get("PUBLIC_URL", "").rstrip("/")  # مثال: https://qiyas-bot.onrender.com
-    if not (TOKEN and base_url):
-        return "حدد TELEGRAM_BOT_TOKEN و PUBLIC_URL أولاً.", 400
-
-    url = f"{base_url}{WEBHOOK_SECRET_PATH}"
-    r = requests.get(f"{API}/setWebhook", params={"url": url}, timeout=15)
-    return r.text, 200
+# مهم: هذا المسار لازم يطابق اللي بتحطه في setWebhook
+@app.post(f"/{WEBHOOK_SECRET}/{BOT_TOKEN}")
+def telegram_webhook():
+    if request.headers.get("content-type") != "application/json":
+        return abort(403)
+    update = request.get_data().decode("utf-8")
+    bot.process_new_updates([telebot.types.Update.de_json(update)])
+    return "ok", 200
