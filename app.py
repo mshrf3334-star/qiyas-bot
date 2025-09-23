@@ -13,138 +13,120 @@ logging.basicConfig(
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
-    raise RuntimeError("حدد TELEGRAM_BOT_TOKEN في المتغيرات")
+    raise RuntimeError("TELEGRAM_BOT_TOKEN environment variable not set")
 
+# إنشاء التطبيق
 application = Application.builder().token(TOKEN).build()
 app = Flask(__name__)
 
-# تحميل بنك الأسئلة
+# تحميل الأسئلة
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         QUESTIONS = json.load(f)
-except FileNotFoundError:
+    logging.info(f"✅ تم تحميل {len(QUESTIONS)} سؤال")
+except Exception as e:
+    logging.error(f"❌ خطأ في تحميل data.json: {e}")
     QUESTIONS = []
-    logging.error("⚠️ ملف data.json غير موجود!")
 
+# متابعة تقدم المستخدمين
 user_progress = {}
-RESTART_TEXT = "🔁 إعادة الاختبار"
-restart_kb = ReplyKeyboardMarkup([[RESTART_TEXT]], resize_keyboard=True)
 
-def reset_user(user_id: int):
+def reset_user(user_id):
     user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
 
-async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_index: int, user_id: int):
-    if not QUESTIONS:
-        await update.message.reply_text("❌ لا توجد أسئلة متاحة.")
-        return
-
-    total_q = len(QUESTIONS)
-    if q_index >= total_q:
-        correct = user_progress[user_id]["correct"]
-        wrong = user_progress[user_id]["wrong"]
+async def send_question(update, context, user_id):
+    if user_id not in user_progress:
+        reset_user(user_id)
+    
+    progress = user_progress[user_id]
+    q_index = progress["index"]
+    
+    if q_index >= len(QUESTIONS):
+        # انتهاء الأسئلة
+        correct = progress["correct"]
+        wrong = progress["wrong"]
         total = correct + wrong
-        score = round((correct / total) * 100, 2) if total > 0 else 0.0
-
+        score = round((correct / total) * 100, 2) if total > 0 else 0
+        
         await update.message.reply_text(
-            f"🎉 خلصت الاختبار!\n\n✅ صحيحة: {correct}\n❌ خاطئة: {wrong}\n📊 الدرجة: {score}%",
-            reply_markup=restart_kb
+            f"🎉 انتهى الاختبار!\n\n"
+            f"✅ الإجابات الصحيحة: {correct}\n"
+            f"❌ الإجابات الخاطئة: {wrong}\n"
+            f"📊 النسبة: {score}%"
         )
         return
+    
+    # إرسال السؤال الحالي
+    question = QUESTIONS[q_index]
+    question_text = f"السؤال {q_index + 1}/{len(QUESTIONS)}:\n{question['question']}\n\n"
+    
+    for i, choice in enumerate(question['choices'], 1):
+        question_text += f"{i}. {choice}\n"
+    
+    await update.message.reply_text(question_text)
 
-    q = QUESTIONS[q_index]
-    text = f"❓ السؤال {q_index+1}/{total_q}\n\n{q['question']}\n\n"
-    for i, choice in enumerate(q["choices"], start=1):
-        text += f"{i}. {choice}\n"
-
-    await update.message.reply_text(text)
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update, context):
     user_id = update.message.from_user.id
     reset_user(user_id)
-    await update.message.reply_text("🚀 أهلاً! ابدأ الاختبار الآن. أجب برقم (1–4).")
-    await send_question(update, context, 0, user_id)
+    await update.message.reply_text("مرحباً! ابدأ الاختبار بالرد بأرقام الإجابات (1-4)")
+    await send_question(update, context, user_id)
 
-async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_answer(update, context):
     user_id = update.message.from_user.id
-    reset_user(user_id)
-    await send_question(update, context, 0, user_id)
-
-async def score(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
+    answer_text = update.message.text.strip()
+    
     if user_id not in user_progress:
-        await update.message.reply_text("💡 اكتب /quiz للبدء.")
+        await update.message.reply_text("اكتب /start للبدء")
         return
     
-    prog = user_progress[user_id]
-    correct = prog["correct"]
-    wrong = prog["wrong"]
-    total = correct + wrong
-    score_pct = round((correct / total) * 100, 2) if total > 0 else 0.0
+    progress = user_progress[user_id]
+    q_index = progress["index"]
     
-    await update.message.reply_text(
-        f"📊 نتيجتك:\n✅ صحيحة: {correct}\n❌ خاطئة: {wrong}\n📈 النسبة: {score_pct}%"
-    )
-
-async def answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    text = update.message.text.strip()
-
-    if text == RESTART_TEXT:
-        reset_user(user_id)
-        await update.message.reply_text("🔁 بدأنا من جديد! بالتوفيق 🤍")
-        await send_question(update, context, 0, user_id)
-        return
-
-    if user_id not in user_progress:
-        await update.message.reply_text("💡 اكتب /quiz للبدء.")
-        return
-
-    q_index = user_progress[user_id]["index"]
     if q_index >= len(QUESTIONS):
-        await update.message.reply_text("✅ الاختبار انتهى.", reply_markup=restart_kb)
+        await update.message.reply_text("الاختبار انتهى. اكتب /start للبدء من جديد")
         return
-
-    q = QUESTIONS[q_index]
-
-    if not text.isdigit() or not (1 <= int(text) <= 4):
-        await update.message.reply_text("⚠️ اكتب رقم من 1 إلى 4 فقط.")
+    
+    # التحقق من الإجابة
+    if not answer_text.isdigit() or not (1 <= int(answer_text) <= 4):
+        await update.message.reply_text("⚠️ الرجاء إدخال رقم بين 1 و 4")
         return
-
-    choice_num = int(text) - 1
-    if choice_num == q["answer_index"]:
-        user_progress[user_id]["correct"] += 1
-        await update.message.reply_text(f"✅ صحيح!\n{q.get('explanation','')}".strip())
+    
+    user_choice = int(answer_text) - 1
+    current_question = QUESTIONS[q_index]
+    
+    if user_choice == current_question['answer_index']:
+        progress["correct"] += 1
+        response = "✅ إجابة صحيحة!"
     else:
-        user_progress[user_id]["wrong"] += 1
-        correct_choice = q["choices"][q["answer_index"]]
-        await update.message.reply_text(f"❌ خطأ. الصحيح: {correct_choice}")
+        progress["wrong"] += 1
+        correct_answer = current_question['choices'][current_question['answer_index']]
+        response = f"❌ إجابة خاطئة. الإجابة الصحيحة: {correct_answer}"
+    
+    # التقدم للسؤال التالي
+    progress["index"] += 1
+    await update.message.reply_text(response)
+    await send_question(update, context, user_id)
 
-    user_progress[user_id]["index"] += 1
-    await send_question(update, context, user_progress[user_id]["index"], user_id)
-
-# تسجيل ال handlers
+# إعداد handlers
 application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("quiz", quiz))
-application.add_handler(CommandHandler("score", score))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, answer))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer))
 
-@app.route(f"/webhook/{TOKEN}", methods=["POST"])
+# Webhook endpoint
+@app.route(f'/webhook/{TOKEN}', methods=['POST'])
 def webhook():
-    json_data = request.get_json()
-    update = Update.de_json(json_data, application.bot)
+    update = Update.de_json(request.get_json(), application.bot)
     application.update_queue.put(update)
-    return "OK"
+    return 'ok'
 
-@app.route("/", methods=["GET"])
+@app.route('/')
 def index():
-    return "✅ البوت شغال!"
+    return '✅ البوت يعمل!'
 
-@app.route("/set_webhook", methods=["GET"])
+@app.route('/set_webhook')
 def set_webhook():
-    webhook_url = f"https://{request.host}/webhook/{TOKEN}"
+    webhook_url = f'https://{request.host}/webhook/{TOKEN}'
     application.bot.set_webhook(webhook_url)
-    return f"✅ Webhook set to: {webhook_url}"
+    return f'Webhook set to: {webhook_url}'
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
