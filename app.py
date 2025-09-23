@@ -2,27 +2,36 @@ import os
 import json
 import logging
 from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
+# حاول استيراد المكتبات بطريقة متوافقة
+try:
+    from telegram import Update
+    from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+    TELEGRAM_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Telegram library import error: {e}")
+    TELEGRAM_AVAILABLE = False
 
 # إعداد اللوجات
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-if not TOKEN:
-    raise RuntimeError("TELEGRAM_BOT_TOKEN not set")
-
-application = Application.builder().token(TOKEN).build()
 app = Flask(__name__)
+
+if TELEGRAM_AVAILABLE and TOKEN:
+    application = Application.builder().token(TOKEN).build()
+else:
+    application = None
+    logger.warning("Telegram bot not initialized")
 
 # تحميل الأسئلة
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         QUESTIONS = json.load(f)
-    logger.info(f"Loaded {len(QUESTIONS)} questions")
+    logger.info(f"✅ تم تحميل {len(QUESTIONS)} سؤال")
 except Exception as e:
-    logger.error(f"Error loading data.json: {e}")
+    logger.error(f"❌ خطأ في تحميل data.json: {e}")
     QUESTIONS = []
 
 user_progress = {}
@@ -30,12 +39,15 @@ user_progress = {}
 def reset_user(user_id):
     user_progress[user_id] = {"index": 0, "correct": 0, "wrong": 0}
 
-async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
+async def send_question(update, context, user_id):
     if not QUESTIONS:
         await update.message.reply_text("❌ لا توجد أسئلة متاحة")
         return
 
-    progress = user_progress.get(user_id, {"index": 0, "correct": 0, "wrong": 0})
+    if user_id not in user_progress:
+        reset_user(user_id)
+    
+    progress = user_progress[user_id]
     q_index = progress["index"]
     
     if q_index >= len(QUESTIONS):
@@ -45,10 +57,7 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, user
         score = round((correct / total) * 100, 2) if total > 0 else 0
         
         await update.message.reply_text(
-            f"🎉 انتهى الاختبار!\n"
-            f"✅ الصحيحة: {correct}\n"
-            f"❌ الخاطئة: {wrong}\n"
-            f"📊 النسبة: {score}%"
+            f"🎉 انتهى الاختبار!\n✅ الصحيحة: {correct}\n❌ الخاطئة: {wrong}\n📊 النسبة: {score}%"
         )
         return
 
@@ -59,13 +68,13 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     
     await update.message.reply_text(text)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update, context):
     user_id = update.message.from_user.id
     reset_user(user_id)
     await update.message.reply_text("🚀 أهلاً! ابدأ بالإجابة برقم من 1 إلى 4")
     await send_question(update, context, user_id)
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update, context):
     user_id = update.message.from_user.id
     text = update.message.text.strip()
     
@@ -98,12 +107,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     progress["index"] += 1
     await send_question(update, context, user_id)
 
-# تسجيل ال handlers
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+# إعداد handlers فقط إذا كانت المكتبة متاحة
+if application:
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 @app.route(f'/webhook/{TOKEN}', methods=['POST'])
 def webhook():
+    if not application:
+        return "Bot not initialized", 500
+        
     try:
         data = request.get_json()
         update = Update.de_json(data, application.bot)
@@ -119,6 +132,9 @@ def home():
 
 @app.route('/set_webhook')
 def set_webhook():
+    if not application:
+        return "Bot not initialized", 500
+        
     try:
         webhook_url = f'https://{request.host}/webhook/{TOKEN}'
         application.bot.set_webhook(webhook_url)
