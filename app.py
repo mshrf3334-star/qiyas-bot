@@ -6,8 +6,6 @@ from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     MessageHandler, ContextTypes, filters
 )
-from aiohttp import web
-
 
 # -----------------------------
 # تحميل الأسئلة من data.json
@@ -37,7 +35,6 @@ def load_questions(path: str = "data.json") -> List[Dict]:
 
 QUESTIONS: List[Dict] = load_questions("data.json")
 
-
 # -----------------------------
 # الواجهة الرئيسية
 # -----------------------------
@@ -55,7 +52,6 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text("اختر من القائمة:", reply_markup=_make_menu_kb())
     else:
         await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
-
 
 # -----------------------------
 # منطق الأسئلة
@@ -77,7 +73,6 @@ def _question_markup(q: Dict) -> InlineKeyboardMarkup:
     buttons = [[InlineKeyboardButton(choice, callback_data=f"quiz_ans:{idx}")]
                for idx, choice in enumerate(q["choices"])]
     return InlineKeyboardMarkup(buttons)
-
 
 # -----------------------------
 # Handlers
@@ -106,7 +101,6 @@ async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     context.user_data["mode"] = "ai"
     await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
-
 
 # -----------------------------
 # إجابة الاختبار
@@ -149,7 +143,6 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
 
-
 # -----------------------------
 # نصوص عامة
 # -----------------------------
@@ -171,11 +164,10 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
-
 # -----------------------------
-# تشغيل البوت مع aiohttp
+# تشغيل البوت (Polling) في Render
 # -----------------------------
-async def main():
+def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
@@ -191,17 +183,9 @@ async def main():
     app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
-    runner = web.AppRunner(app.web_app)
-    await runner.setup()
-    port = int(os.getenv("PORT", "10000"))
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-
-    print(f"Bot running on port {port}")
-    await app.start()
-    await app.updater.start_polling()
-    await app.updater.idle()
+    # Polling (أبسط وأضمن في Render)
+    print("🤖 Bot is running (polling mode)...")
+    app.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
