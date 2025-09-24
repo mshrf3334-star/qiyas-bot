@@ -1,29 +1,18 @@
 import os, json, random
-from typing import List, Dict
-from flask import Flask, request
+from typing import List, Dict, Optional
 
-from telegram import (
-    Update, InlineKeyboardMarkup, InlineKeyboardButton
-)
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     MessageHandler, ContextTypes, filters
 )
 
-# ========== Flask ==========
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "🚀 البوت شغال على Render"
-
-# ========== تحميل الأسئلة ==========
+# -----------------------------
+# تحميل الأسئلة من data.json
+# -----------------------------
 def load_questions(path: str = "data.json") -> List[Dict]:
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-    except Exception:
-        return []
+    with open(path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
 
     norm = []
     for i, item in enumerate(raw, start=1):
@@ -31,7 +20,7 @@ def load_questions(path: str = "data.json") -> List[Dict]:
         choices = item.get("choices") or item.get("options") or []
         if not choices and "answer" in item:
             choices = [item["answer"]]
-        if "answer_index" in item:
+        if "answer_index" in item and 0 <= item["answer_index"] < len(choices):
             correct = choices[item["answer_index"]]
         else:
             correct = item.get("answer", "")
@@ -44,9 +33,12 @@ def load_questions(path: str = "data.json") -> List[Dict]:
         })
     return norm
 
-QUESTIONS: List[Dict] = load_questions()
+QUESTIONS: List[Dict] = load_questions("data.json")
 
-# ========== قائمة ==========
+
+# -----------------------------
+# واجهة القائمة الرئيسية
+# -----------------------------
 def _make_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 جدول الضرب", callback_data="menu_mult")],
@@ -62,9 +54,14 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
 
-# ========== أسئلة ==========
-def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Dict | None:
-    asked = context.user_data.get("asked_ids", set())
+
+# -----------------------------
+# منطق بنك الأسئلة
+# -----------------------------
+def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Optional[Dict]:
+    asked = context.user_data.get("asked_ids")
+    if asked is None:
+        asked = set()
     remaining = [q for q in QUESTIONS if q["id"] not in asked]
     if not remaining:
         return None
@@ -75,30 +72,65 @@ def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Dict | None:
     return q
 
 def _question_markup(q: Dict) -> InlineKeyboardMarkup:
-    buttons = []
-    for idx, choice in enumerate(q["choices"]):
-        buttons.append([InlineKeyboardButton(choice, callback_data=f"quiz_ans:{idx}")])
+    buttons = [[InlineKeyboardButton(choice, callback_data=f"quiz_ans:{idx}")]
+               for idx, choice in enumerate(q["choices"])]
     return InlineKeyboardMarkup(buttons)
 
+
+# -----------------------------
+# Handlers القائمة
+# -----------------------------
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await show_menu(update, context)
+
+async def menu_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    context.user_data["asked_ids"] = set()
+    nxt = _pick_next_question(context)
+    if not nxt:
+        await q.edit_message_text("لا توجد أسئلة حالياً.")
+        return
+    await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
+
+async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    context.user_data["mode"] = "mult"
+    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12.\n\nللرجوع للقائمة: /start")
+
+async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    context.user_data["mode"] = "ai"
+    await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
+
+
+# -----------------------------
+# اختبار قياس: التحقق والإكمال
+# -----------------------------
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+
     current = context.user_data.get("current_q")
     if not current:
         await q.edit_message_text("انتهت الجلسة. اضغط /start للعودة للقائمة.")
         return
+
     try:
         chosen_idx = int(q.data.split(":")[1])
     except Exception:
         chosen_idx = -1
-    chosen_text = ""
-    if 0 <= chosen_idx < len(current["choices"]):
-        chosen_text = current["choices"][chosen_idx]
+
+    chosen_text = current["choices"][chosen_idx] if 0 <= chosen_idx < len(current["choices"]) else ""
     is_correct = (chosen_text == current["correct"])
+
     prefix = "✅ صحيح!" if is_correct else "❌ خطأ."
     explanation = f"\n\nالجواب الصحيح: {current['correct']}"
     if current.get("explanation"):
         explanation += f"\nالشرح: {current['explanation']}"
+
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("➡️ السؤال التالي", callback_data="quiz_next")],
         [InlineKeyboardButton("🏠 القائمة", callback_data="menu_home")]
@@ -115,12 +147,14 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
 
-# ========== جدول الضرب ==========
+
+# -----------------------------
+# جدول الضرب + الذكاء الاصطناعي
+# -----------------------------
 def _make_table(n: int) -> str:
     lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
     return "📚 جدول الضرب\n" + "\n".join(lines)
 
-# ========== ذكاء اصطناعي ==========
 async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mode = context.user_data.get("mode")
     if mode == "mult":
@@ -132,7 +166,7 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(_make_table(n))
         return
     elif mode == "ai":
-        question = update.message.text.strip()
+        question = (update.message.text or "").strip()
         api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
         if api_key:
             try:
@@ -142,80 +176,71 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 resp = client.chat.completions.create(
                     model=model,
                     messages=[
-                        {"role":"system","content":"أجب باختصار وبالعربية."},
-                        {"role":"user","content": question}
+                        {"role": "system", "content": "أجب باختصار وبالعربية."},
+                        {"role": "user", "content": question},
                     ],
                     temperature=0.4,
-                    max_tokens=400
+                    max_tokens=400,
                 )
                 answer = resp.choices[0].message.content.strip()
                 await update.message.reply_text(answer)
                 return
             except Exception:
                 pass
-        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً.")
+        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً. أضف AI_API_KEY ثم جرّب.")
         return
     else:
-        await update.message.reply_text("ارجع للقائمة:", reply_markup=_make_menu_kb())
+        await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
-# ========== قائمة الأوامر ==========
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await show_menu(update, context)
 
-async def menu_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["asked_ids"] = set()
-    nxt = _pick_next_question(context)
-    if not nxt:
-        await q.edit_message_text("لا توجد أسئلة حالياً.")
-        return
-    await q.edit_message_text(
-        text=f"📝 سؤال: {nxt['q']}",
-        reply_markup=_question_markup(nxt)
-    )
+# -----------------------------
+# نقطة تشغيل + Webhook لـ Render
+# -----------------------------
+async def _health(request):
+    return __import__("aiohttp").web.Response(text="OK", status=200)
 
-async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["mode"] = "mult"
-    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12.\n\nللرجوع للقائمة: /start")
+# تعريف app ليستخدمه gunicorn
+token = os.getenv("TELEGRAM_BOT_TOKEN", "DUMMY")
+app = Application.builder().token(token).build()
 
-async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["mode"] = "ai"
-    await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
-
-# ========== Telegram Bot ==========
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود.")
+        raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
 
-    tg_app = Application.builder().token(token).build()
+    application = Application.builder().token(token).build()
 
-    tg_app.add_handler(CommandHandler("start", start_cmd))
-    tg_app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
-    tg_app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
-    tg_app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
-    tg_app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
-    tg_app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
-    tg_app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
-    tg_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    # أوامر وقائمة
+    application.add_handler(CommandHandler("start", start_cmd))
+    application.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
+    application.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
+    application.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
+    application.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
+
+    # اختبار
+    application.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
+    application.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
+
+    # نصوص عامة
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+
+    # مسار صحي
+    from aiohttp import web
+    application.web_app.add_routes([web.get("/", _health)])
 
     external = os.getenv("RENDER_EXTERNAL_URL")
     port = int(os.getenv("PORT", "10000"))
+
     if external:
-        tg_app.run_webhook(
+        application.run_webhook(
             listen="0.0.0.0",
             port=port,
             url_path=token,
             webhook_url=f"https://{external}/{token}",
         )
     else:
-        print("Running locally in polling mode")
-        tg_app.run_polling()
+        print("Running in polling (no RENDER_EXTERNAL_URL found)")
+        application.run_polling()
 
 if __name__ == "__main__":
     main()
