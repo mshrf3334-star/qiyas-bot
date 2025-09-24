@@ -1,33 +1,31 @@
-import os
 from flask import Flask, request
-import telegram
+import os
+import requests
 
 app = Flask(__name__)
 
-# التوكن لازم يكون موجود في متغير بيئة TELEGRAM_BOT_TOKEN
+# توكن البوت من الـ Environment Variables
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-if not TOKEN:
-    raise RuntimeError("⚠️ ضع TELEGRAM_BOT_TOKEN في Environment Variables في Render")
+URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-bot = telegram.Bot(token=TOKEN)
-
-# المسار الأساسي (للاختبار/Health Check)
-@app.route("/", methods=["GET"])
+@app.route('/')
 def home():
-    return "البوت شغال ✅", 200
+    return "البوت شغال ✅"
 
-# مسار الويبهوك (ثابت /webhook)
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
+    data = request.json
+    print("📩 رسالة جديدة:", data, flush=True)  # تظهر في اللوقس
 
-    # هنا منطق التعامل مع الرسائل
-    chat_id = update.effective_chat.id
-    text = update.message.text if update.message else ""
+    if "message" in data:
+        chat_id = data['message']['chat']['id']
+        text = data['message'].get('text', '')
 
-    if text == "/start":
-        bot.send_message(chat_id=chat_id, text="🚀 أهلاً بك! البوت شغال ✅")
-    else:
-        bot.send_message(chat_id=chat_id, text=f"📩 استلمت: {text}")
+        # رد تجريبي
+        reply = f"إستلمت رسالتك: {text}"
+        requests.post(URL, json={"chat_id": chat_id, "text": reply})
 
-    return "ok", 200
+    return {"ok": True}
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
