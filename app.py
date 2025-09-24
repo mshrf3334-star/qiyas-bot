@@ -1,163 +1,105 @@
-import os, json, random
-from typing import List, Dict
+import os
+import json
+import logging
+from flask import Flask, request
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler,
-    MessageHandler, ContextTypes, filters
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
+import openai
+
+# إعداد اللوج
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
-# تحميل الأسئلة من ملف data.json
-def load_questions(path: str = "data.json") -> List[Dict]:
-    with open(path, "r", encoding="utf-8") as f:
-        raw = json.load(f)
+# تحميل متغيرات البيئة
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini")
 
-    norm = []
-    for i, item in enumerate(raw, start=1):
-        qtxt = item.get("question") or item.get("q") or ""
-        choices = item.get("choices") or item.get("options") or []
-        if not choices and "answer" in item:
-            choices = [item["answer"]]
-        if "answer_index" in item:
-            correct = choices[item["answer_index"]]
-        else:
-            correct = item.get("answer", "")
-        norm.append({
-            "id": str(item.get("id", i)),
-            "q": qtxt,
-            "choices": choices,
-            "correct": correct,
-            "explanation": item.get("explanation", "")
-        })
-    return norm
+openai.api_key = AI_API_KEY
 
-QUESTIONS: List[Dict] = load_questions()
+# تحميل الداتا (مثلاً بنك الأسئلة)
+DATA_FILE = "data.json"
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        DATA = json.load(f)
+else:
+    DATA = {"questions": []}
 
-# قائمة البداية
-def _make_menu_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📚 جدول الضرب", callback_data="menu_mult")],
-        [InlineKeyboardButton("🤖 الذكاء الاصطناعي", callback_data="menu_ai")],
-        [InlineKeyboardButton("📝 قياس: اختبر نفسك", callback_data="menu_quiz")],
-    ])
+# Flask app
+app = Flask(__name__)
 
-async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.callback_query:
-        q = update.callback_query
-        await q.answer()
-        await q.edit_message_text("اختر من القائمة:", reply_markup=_make_menu_kb())
-    else:
-        await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
+@app.route("/")
+def home():
+    return "🚀 البوت والموقع شغالين يا بطل!"
 
-# الأسئلة
-def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Dict | None:
-    asked = context.user_data.get("asked_ids", set())
-    remaining = [q for q in QUESTIONS if q["id"] not in asked]
-    if not remaining:
-        return None
-    q = random.choice(remaining)
-    asked.add(q["id"])
-    context.user_data["asked_ids"] = asked
-    context.user_data["current_q"] = q
-    return q
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), application.bot)
+    application.update_queue.put_nowait(update)
+    return "ok", 200
 
-def _question_markup(q: Dict) -> InlineKeyboardMarkup:
-    buttons = []
-    for idx, choice in enumerate(q["choices"]):
-        buttons.append([InlineKeyboardButton(choice, callback_data=f"quiz_ans:{idx}")])
-    return InlineKeyboardMarkup(buttons)
-
-# أوامر
-async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await show_menu(update, context)
-
-async def menu_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["asked_ids"] = set()
-    nxt = _pick_next_question(context)
-    if not nxt:
-        await q.edit_message_text("لا توجد أسئلة حالياً.")
-        return
-    await q.edit_message_text(
-        text=f"📝 سؤال: {nxt['q']}",
-        reply_markup=_question_markup(nxt)
+# أوامر البوت
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("جدول الضرب", callback_data="multiplication")],
+        [InlineKeyboardButton("اختبر نفسك", callback_data="quiz")],
+        [InlineKeyboardButton("ذكاء اصطناعي", callback_data="ai")],
+    ]
+    await update.message.reply_text(
+        "مرحباً بك في بوت القياس 🤖 اختر من القائمة:", 
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    current = context.user_data.get("current_q")
-    if not current:
-        await q.edit_message_text("انتهت الجلسة. اضغط /start للعودة للقائمة.")
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "multiplication":
+        text = "\n".join([f"{i} × {j} = {i*j}" for i in range(1, 6) for j in range(1, 6)])
+        await query.edit_message_text(f"📘 جدول الضرب:\n{text}")
+
+    elif query.data == "quiz":
+        if DATA["questions"]:
+            q = DATA["questions"][0]
+            await query.edit_message_text(f"❓ {q['question']}")
+        else:
+            await query.edit_message_text("مافي أسئلة في data.json 📂")
+
+    elif query.data == "ai":
+        await query.edit_message_text("✍️ أرسل سؤالك وسيجيبك الذكاء الاصطناعي")
+
+async def ai_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
         return
-    chosen_idx = int(q.data.split(":")[1])
-    chosen_text = current["choices"][chosen_idx]
-    is_correct = (chosen_text == current["correct"])
-    prefix = "✅ صحيح!" if is_correct else "❌ خطأ."
-    explanation = f"\n\nالجواب الصحيح: {current['correct']}"
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("➡️ السؤال التالي", callback_data="quiz_next")],
-        [InlineKeyboardButton("🏠 القائمة", callback_data="menu_home")]
-    ])
-    await q.edit_message_text(f"{prefix}{explanation}", reply_markup=kb)
+    user_text = update.message.text
 
-async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    nxt = _pick_next_question(context)
-    if not nxt:
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🏠 العودة للقائمة", callback_data="menu_home")]])
-        await q.edit_message_text("انتهت الأسئلة! أحسنت 👏", reply_markup=kb)
-        return
-    await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
+    try:
+        response = openai.ChatCompletion.create(
+            model=AI_MODEL,
+            messages=[{"role": "user", "content": user_text}],
+        )
+        answer = response["choices"][0]["message"]["content"]
+    except Exception as e:
+        answer = f"⚠️ خطأ في الذكاء الاصطناعي: {str(e)}"
 
-async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["mode"] = "mult"
-    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12.\n\nللرجوع للقائمة: /start")
+    await update.message.reply_text(answer)
 
-async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    context.user_data["mode"] = "ai"
-    await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
+# إعداد التطبيق
+application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-def _make_table(n: int) -> str:
-    lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
-    return "📚 جدول الضرب\n" + "\n".join(lines)
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CallbackQueryHandler(button_handler))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_message))
 
-async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    mode = context.user_data.get("mode")
-    if mode == "mult":
-        txt = (update.message.text or "").strip()
-        if not txt.lstrip("-").isdigit():
-            await update.message.reply_text("أرسل رقمًا صحيحًا فقط")
-            return
-        n = int(txt)
-        await update.message.reply_text(_make_table(n))
-        return
-    elif mode == "ai":
-        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي تضاف لاحقاً.")
-        return
-    else:
-        await update.message.reply_text("ارجع للقائمة:", reply_markup=_make_menu_kb())
-
-# تشغيل البوت
-def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        raise RuntimeError("⚠️ ضع TELEGRAM_BOT_TOKEN في Render")
-    app = Application.builder().token(token).build()
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
-    app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
-    app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
-    app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
-    app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
-    app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+# تشغيل البوت مع Flask
+if __name__ != "__main__":
+    # على Render
+    application.run_polling(stop_signals=None)
