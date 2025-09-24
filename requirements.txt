@@ -1,4 +1,14 @@
+flask
+gunicorn
+requests
 python-telegram-bot==20.6
-openai==1.50.2
-aiohttp==3.9.5
-gunicorn==21.2.0
+openai
+pandas
+numpy
+scikit-learn
+matplotlib
+jinja2
+itsdangerous
+click
+tqdm
+aiohttp
