@@ -1,279 +1,242 @@
-import os, json, random, time
-from flask import Flask, request, jsonify
-import requests
+import os, json, random
+from typing import List, Dict
 
-# ========= الإعدادات =========
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_MODEL   = os.getenv("AI_MODEL", "gpt-4o-mini")
+from telegram import (
+    Update, InlineKeyboardMarkup, InlineKeyboardButton
+)
+from telegram.ext import (
+    Application, CommandHandler, CallbackQueryHandler,
+    MessageHandler, ContextTypes, filters
+)
 
-TG_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
-SESSION = {}  # حالة المستخدمين بالذاكرة {chat_id: {...}}
-
-app = Flask(__name__)
-
-# ========= أدوات تيليجرام =========
-def tg(method, payload):
-    r = requests.post(f"{TG_API}/{method}", json=payload, timeout=15)
-    return r.json() if r.ok else {"ok": False, "error": r.text}
-
-def reply_kb(rows):
-    return {"keyboard": rows, "resize_keyboard": True}
-
-def inline_kb(rows):
-    return {"inline_keyboard": rows}
-
-def send_text(chat_id, text, **kw):
-    return tg("sendMessage", {"chat_id": chat_id, "text": text, **kw})
-
-def edit_text(chat_id, msg_id, text, **kw):
-    return tg("editMessageText", {"chat_id": chat_id, "message_id": msg_id, "text": text, **kw})
-
-# ========= بيانات قياس =========
-def load_bank():
-    path = os.path.join(os.getcwd(), "data.json")
-    if not os.path.exists(path):
-        return []
+# ====== تحميل الأسئلة وتهيئتها ======
+def load_questions(path: str = "data.json") -> List[Dict]:
+    """
+    يدعم شكلين:
+    1) {"question": "...", "choices": [...], "answer_index": 1, "explanation": "..."}
+    2) {"question": "...", "options":  [...], "answer":        "...", "explanation": "..."}
+    ويُرجع قائمة بعناصر موحّدة: {"id","q","choices","correct","explanation"}
+    """
     with open(path, "r", encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-            # نتأكد من البنية
-            qs = []
-            for q in data:
-                if "question" in q and "choices" in q and "answer_index" in q:
-                    qs.append(q)
-            return qs
-        except Exception:
-            return []
-BANK = load_bank()
+        raw = json.load(f)
 
-# ========= ذكاء اصطناعي =========
-def ai_chat(prompt, history=None):
-    if not AI_API_KEY:
-        return "⚠️ لم يتم ضبط مفتاح OpenAI (المتغيّر AI_API_KEY)."
-    headers = {"Authorization": f"Bearer {AI_API_KEY}",
-               "Content-Type": "application/json"}
-    messages = [{"role": "system", "content": "أنت مساعد تعليمي مختصر وواضح."}]
-    if history:
-        messages += history
-    messages.append({"role": "user", "content": prompt})
-    body = {
-        "model": AI_MODEL,
-        "messages": messages,
-        "temperature": 0.2,
-        "max_tokens": 600
-    }
-    try:
-        r = requests.post("https://api.openai.com/v1/chat/completions",
-                          headers=headers, json=body, timeout=30)
-        j = r.json()
-        return j["choices"][0]["message"]["content"].strip()
-    except Exception as e:
-        return f"⚠️ خطأ في طلب الذكاء الاصطناعي: {e}"
+    norm = []
+    for i, item in enumerate(raw, start=1):
+        qtxt = item.get("question") or item.get("q") or ""
+        choices = item.get("choices") or item.get("options") or []
+        if not choices and "answer" in item:
+            # احتياط لو السؤال بدون خيارات (نادر)
+            choices = [item["answer"]]
+        if "answer_index" in item:
+            correct = choices[item["answer_index"]]
+        else:
+            correct = item.get("answer", "")
+        norm.append({
+            "id": str(item.get("id", i)),
+            "q": qtxt,
+            "choices": choices,
+            "correct": correct,
+            "explanation": item.get("explanation", "")
+        })
+    return norm
 
-# ========= منيو رئيسي =========
-MAIN_MENU = reply_kb([
-    ["🧮 جدول الضرب", "🤖 الذكاء الاصطناعي"],
-    ["📝 قياس: اختبر نفسك"]
-])
+QUESTIONS: List[Dict] = load_questions()
 
-def go_home(chat_id):
-    send_text(chat_id, "اختر من القائمة ↓", reply_markup=MAIN_MENU)
+# ====== أدوات مساعدة للاختبار ======
+def _make_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📚 جدول الضرب", callback_data="menu_mult")],
+        [InlineKeyboardButton("🤖 الذكاء الاصطناعي", callback_data="menu_ai")],
+        [InlineKeyboardButton("📝 قياس: اختبر نفسك", callback_data="menu_quiz")],
+    ])
 
-# ========= جدول الضرب =========
-def start_mult(chat_id):
-    SESSION[chat_id] = {"mode": "mult", "score": 0, "n": None, "q": 0}
-    send_text(chat_id,
-              "🧮 جدول الضرب:\nأرسل رقم (2→12) للتدريب عليه، أو أرسل كلمة: عشوائي",
-              reply_markup=reply_kb([["عشوائي"],["الرجوع ⬅️"]]))
-
-def ask_mult(chat_id):
-    st = SESSION.get(chat_id, {})
-    if st.get("mode") != "mult":
-        return
-    n = st.get("n")
-    a = random.randint(2, 12)
-    st["current"] = (a, n)
-    st["q"] += 1
-    SESSION[chat_id] = st
-    send_text(chat_id, f"سؤال {st['q']}: كم حاصل {a} × {n} ؟", reply_markup=reply_kb([["الرجوع ⬅️"]]))
-
-def check_mult(chat_id, txt):
-    st = SESSION.get(chat_id, {})
-    if "current" not in st: 
-        return
-    a, n = st["current"]
-    try:
-        val = int(txt)
-    except:
-        send_text(chat_id, "أرسل رقمًا (الإجابة).")
-        return
-    correct = a * n
-    if val == correct:
-        st["score"] += 1
-        send_text(chat_id, "✅ صحيح!")
+async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.callback_query:
+        q = update.callback_query
+        await q.answer()
+        await q.edit_message_text("اختر من القائمة:", reply_markup=_make_menu_kb())
     else:
-        send_text(chat_id, f"❌ خطأ. الصحيح: {correct}")
-    SESSION[chat_id] = st
-    if st["q"] >= 10:
-        send_text(chat_id, f"انتهى التدريب: نتيجتك {st['score']}/10")
-        go_home(chat_id)
-        SESSION.pop(chat_id, None)
-    else:
-        ask_mult(chat_id)
+        await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
 
-# ========= اختبار قياس =========
-def start_quiz(chat_id):
-    if not BANK:
-        send_text(chat_id, "⚠️ لا يوجد بنك أسئلة (الملف data.json غير موجود).")
-        return
-    qs = random.sample(BANK, k=min(10, len(BANK)))
-    SESSION[chat_id] = {
-        "mode": "quiz",
-        "idx": 0,
-        "score": 0,
-        "qs": qs
-    }
-    ask_quiz(chat_id)
+def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Dict | None:
+    asked = context.user_data.get("asked_ids", set())
+    remaining = [q for q in QUESTIONS if q["id"] not in asked]
+    if not remaining:
+        return None
+    q = random.choice(remaining)
+    asked.add(q["id"])
+    context.user_data["asked_ids"] = asked
+    context.user_data["current_q"] = q
+    return q
 
-def ask_quiz(chat_id):
-    st = SESSION.get(chat_id, {})
-    i = st.get("idx", 0)
-    qs = st.get("qs", [])
-    if i >= len(qs):
-        send_text(chat_id, f"تم الاختبار: نتيجتك {st['score']}/{len(qs)}")
-        go_home(chat_id)
-        SESSION.pop(chat_id, None)
-        return
-    q = qs[i]
+def _question_markup(q: Dict) -> InlineKeyboardMarkup:
+    # نُشفّر الاختيار بالاندكس لتقليل حجم callback_data
     buttons = []
-    for k, choice in enumerate(q["choices"]):
-        buttons.append([{"text": choice, "callback_data": f"quiz:{k}"}])
-    send_text(
-        chat_id,
-        f"📝 سؤال {i+1}/{len(qs)}\n{q['question']}",
-        reply_markup={"inline_keyboard": buttons}
+    for idx, choice in enumerate(q["choices"]):
+        buttons.append([InlineKeyboardButton(choice, callback_data=f"quiz_ans:{idx}")])
+    return InlineKeyboardMarkup(buttons)
+
+async def _send_question(where, q: Dict):
+    text = f"📝 سؤال {len(q.get('choices', [])) and ''}: {q['q']}"
+    await where(
+        text=text,
+        reply_markup=_question_markup(q)
     )
 
-def handle_quiz_callback(chat_id, msg_id, data):
-    st = SESSION.get(chat_id, {})
-    if st.get("mode") != "quiz": 
+# ====== Handlers القائمة ======
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await show_menu(update, context)
+
+async def menu_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    # تهيئة جلسة جديدة
+    context.user_data["asked_ids"] = set()
+    nxt = _pick_next_question(context)
+    if not nxt:
+        await q.edit_message_text("لا توجد أسئلة حالياً.")
         return
-    i = st.get("idx", 0)
-    q = st["qs"][i]
-    pick = int(data.split(":")[1])
-    correct = q["answer_index"]
+    await q.edit_message_text(
+        text=f"📝 سؤال: {nxt['q']}",
+        reply_markup=_question_markup(nxt)
+    )
 
-    if pick == correct:
-        st["score"] += 1
-        txt = f"✅ صحيح!\n{q['explanation']}"
+async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    context.user_data["mode"] = "mult"
+    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12.\n\nللرجوع للقائمة: /start")
+
+async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    context.user_data["mode"] = "ai"
+    await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
+
+# ====== اختبار قياس: التحقق والإكمال ======
+async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+
+    current = context.user_data.get("current_q")
+    if not current:
+        await q.edit_message_text("انتهت الجلسة. اضغط /start للعودة للقائمة.")
+        return
+
+    try:
+        chosen_idx = int(q.data.split(":")[1])
+    except Exception:
+        chosen_idx = -1
+
+    chosen_text = ""
+    if 0 <= chosen_idx < len(current["choices"]):
+        chosen_text = current["choices"][chosen_idx]
+
+    is_correct = (chosen_text == current["correct"])
+
+    prefix = "✅ صحيح!" if is_correct else "❌ خطأ."
+    explanation = f"\n\nالجواب الصحيح: {current['correct']}"
+    if current.get("explanation"):
+        explanation += f"\nالشرح: {current['explanation']}"
+
+    # أزرار بعد النتيجة
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("➡️ السؤال التالي", callback_data="quiz_next")],
+        [InlineKeyboardButton("🏠 القائمة", callback_data="menu_home")]
+    ])
+    await q.edit_message_text(f"{prefix}{explanation}", reply_markup=kb)
+
+async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    nxt = _pick_next_question(context)
+    if not nxt:
+        # لا مزيد من الأسئلة
+        kb = InlineKeyboardMarkup([[InlineKeyboardButton("🏠 العودة للقائمة", callback_data="menu_home")]])
+        await q.edit_message_text("انتهت الأسئلة! أحسنت 👏", reply_markup=kb)
+        return
+    await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
+
+# ====== جدول الضرب ======
+def _make_table(n: int) -> str:
+    lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
+    return "📚 جدول الضرب\n" + "\n".join(lines)
+
+async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    mode = context.user_data.get("mode")
+    if mode == "mult":
+        txt = (update.message.text or "").strip()
+        if not txt.lstrip("-").isdigit():
+            await update.message.reply_text("أرسل رقمًا صحيحًا فقط، مثال: 7")
+            return
+        n = int(txt)
+        await update.message.reply_text(_make_table(n))
+        return
+    elif mode == "ai":
+        # محاولة استخدام OpenAI، وإلا رد افتراضي
+        question = update.message.text.strip()
+        api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if api_key:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                model = os.getenv("AI_MODEL", "gpt-4o-mini")
+                resp = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role":"system","content":"أجب باختصار وبالعربية."},
+                        {"role":"user","content": question}
+                    ],
+                    temperature=0.4,
+                    max_tokens=400
+                )
+                answer = resp.choices[0].message.content.strip()
+                await update.message.reply_text(answer)
+                return
+            except Exception:
+                pass
+        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً. أضف AI_API_KEY ثم جرّب.")
+        return
     else:
-        txt = f"❌ خطأ.\n{q['explanation']}"
-    edit_text(chat_id, msg_id, txt)
-    st["idx"] += 1
-    SESSION[chat_id] = st
-    time.sleep(0.3)
-    ask_quiz(chat_id)
+        # أي نص خارج الأوضاع يرجع للقائمة
+        await update.message.reply_text("ارجع للقائمة:", reply_markup=_make_menu_kb())
 
-# ========= ذكاء اصطناعي (دردشة) =========
-def start_ai(chat_id):
-    SESSION[chat_id] = {"mode": "ai", "history": []}
-    send_text(chat_id, "🤖 أرسل سؤالك أو اكتب 'الرجوع' للعودة للقائمة.", reply_markup=reply_kb([["الرجوع ⬅️"]]))
+# ====== البداية والويبهوك على Render ======
+def main():
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
 
-def handle_ai(chat_id, txt):
-    st = SESSION.get(chat_id, {"mode":"ai","history":[]})
-    hist = st.get("history", [])
-    # نحافظ على تاريخ قصير
-    hist = hist[-6:]
-    answer = ai_chat(txt, history=hist)
-    hist += [{"role":"user","content":txt},{"role":"assistant","content":answer}]
-    st["history"] = hist
-    SESSION[chat_id] = st
-    send_text(chat_id, answer)
+    app = Application.builder().token(token).build()
 
-# ========= Webhook =========
-@app.route("/", methods=["GET"])
-def index():
-    return "OK", 200
+    # أوامر وقائمة
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
+    app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
+    app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
+    app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
 
-@app.route("/setwebhook", methods=["GET"])
-def setwebhook():
-    base = request.url_root.rstrip("/")
-    url = f"{base}/webhook"
-    res = tg("setWebhook", {"url": url})
-    return jsonify(res)
+    # اختبار
+    app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
+    app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    upd = request.get_json(force=True, silent=True) or {}
-    # رسائل
-    if "message" in upd:
-        m = upd["message"]
-        chat_id = m["chat"]["id"]
-        txt = m.get("text", "") or ""
+    # نصوص عامة (جدول الضرب/الذكاء)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
-        if txt == "/start":
-            send_text(chat_id, "مرحبًا! 👋", reply_markup=MAIN_MENU)
-            return "ok"
+    # Webhook لِـ Render
+    external = os.getenv("RENDER_EXTERNAL_URL")  # يأتي من Render
+    port = int(os.getenv("PORT", "10000"))
+    if external:
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=token,
+            webhook_url=f"https://{external}/{token}",
+        )
+    else:
+        # تشغيل محلي (للاختبار)
+        print("Running in polling (no RENDER_EXTERNAL_URL found)")
+        app.run_polling()
 
-        if txt in ["الرجوع", "الرجوع ⬅️", "/menu"]:
-            SESSION.pop(chat_id, None)
-            go_home(chat_id)
-            return "ok"
-
-        if txt.startswith("/قياس") or txt == "📝 قياس: اختبر نفسك":
-            start_quiz(chat_id); return "ok"
-
-        if txt == "🧮 جدول الضرب":
-            start_mult(chat_id); return "ok"
-
-        st = SESSION.get(chat_id)
-
-        # في وضع جدول الضرب
-        if st and st.get("mode")=="mult":
-            if txt.strip()=="عشوائي":
-                st["n"] = random.randint(2,12)
-                st["q"] = 0; st["score"] = 0
-                SESSION[chat_id] = st
-                send_text(chat_id, f"اخترنا لك: {st['n']}. جاهز؟")
-                ask_mult(chat_id)
-                return "ok"
-            # رقم المستخدم
-            if st.get("n") is None:
-                try:
-                    n = int(txt)
-                    if n < 2 or n > 12: raise ValueError
-                    st["n"] = n; st["q"]=0; st["score"]=0
-                    SESSION[chat_id] = st
-                    send_text(chat_id, f"تمام! سنطرح 10 أسئلة على جدول {n}.")
-                    ask_mult(chat_id)
-                except:
-                    send_text(chat_id, "أرسل رقمًا بين 2 و 12 أو اكتب عشوائي.")
-                return "ok"
-            # إجابة سؤال
-            check_mult(chat_id, txt)
-            return "ok"
-
-        # الذكاء الاصطناعي
-        if txt == "🤖 الذكاء الاصطناعي" or txt.startswith("/ai"):
-            start_ai(chat_id); return "ok"
-        if st and st.get("mode")=="ai":
-            handle_ai(chat_id, txt); return "ok"
-
-        # الافتراضي: أظهر المنيو
-        go_home(chat_id)
-        return "ok"
-
-    # أزرار Inline
-    if "callback_query" in upd:
-        cq = upd["callback_query"]
-        data = cq.get("data","")
-        chat_id = cq["message"]["chat"]["id"]
-        msg_id = cq["message"]["message_id"]
-        if data.startswith("quiz:"):
-            handle_quiz_callback(chat_id, msg_id, data)
-        # نجاوب على callback عشان ما تدور الساعة
-        tg("answerCallbackQuery", {"callback_query_id": cq["id"]})
-        return "ok"
-
-    return "ok"
+if __name__ == "__main__":
+    main()
