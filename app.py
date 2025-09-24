@@ -1,31 +1,31 @@
 from flask import Flask, request
+import telegram
 import os
-import requests
 
 app = Flask(__name__)
 
-# توكن البوت من الـ Environment Variables
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+# جلب التوكن من المتغيرات البيئية في Render
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+bot = telegram.Bot(token=TOKEN)
 
 @app.route('/')
 def home():
     return "البوت شغال ✅"
 
+# مسار الويب هوك - لازم يكون مطابق للرابط اللي سجلته مع Telegram
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    data = request.json
-    print("📩 رسالة جديدة:", data, flush=True)  # تظهر في اللوقس
+    try:
+        update = telegram.Update.de_json(request.get_json(force=True), bot)
+        chat_id = update.message.chat.id
+        text = update.message.text
 
-    if "message" in data:
-        chat_id = data['message']['chat']['id']
-        text = data['message'].get('text', '')
-
-        # رد تجريبي
-        reply = f"إستلمت رسالتك: {text}"
-        requests.post(URL, json={"chat_id": chat_id, "text": reply})
-
-    return {"ok": True}
+        # رد بسيط
+        bot.sendMessage(chat_id=chat_id, text=f"📩 وصلتني رسالتك: {text}")
+    except Exception as e:
+        print("Error:", e)
+    return "ok"
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
