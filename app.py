@@ -37,7 +37,7 @@ QUESTIONS: List[Dict] = load_questions("data.json")
 
 
 # -----------------------------
-# القائمة الرئيسية
+# واجهة القائمة الرئيسية
 # -----------------------------
 def _make_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -78,7 +78,7 @@ def _question_markup(q: Dict) -> InlineKeyboardMarkup:
 
 
 # -----------------------------
-# Handlers
+# Handlers القائمة
 # -----------------------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_menu(update, context)
@@ -97,7 +97,7 @@ async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     context.user_data["mode"] = "mult"
-    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه.\n\nللرجوع للقائمة: /start")
+    await q.edit_message_text("أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12.\n\nللرجوع للقائمة: /start")
 
 async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -107,7 +107,7 @@ async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -----------------------------
-# اختبار الأسئلة
+# اختبار قياس: التحقق والإكمال
 # -----------------------------
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -149,7 +149,7 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -----------------------------
-# جدول الضرب + AI
+# جدول الضرب + الذكاء الاصطناعي
 # -----------------------------
 def _make_table(n: int) -> str:
     lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
@@ -160,7 +160,7 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if mode == "mult":
         txt = (update.message.text or "").strip()
         if not txt.lstrip("-").isdigit():
-            await update.message.reply_text("أرسل رقمًا صحيحًا فقط.")
+            await update.message.reply_text("أرسل رقمًا صحيحًا فقط، مثال: 7")
             return
         n = int(txt)
         await update.message.reply_text(_make_table(n))
@@ -176,7 +176,7 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 resp = client.chat.completions.create(
                     model=model,
                     messages=[
-                        {"role": "system", "content": "أجب بالعربية وباختصار."},
+                        {"role": "system", "content": "أجب باختصار وبالعربية."},
                         {"role": "user", "content": question},
                     ],
                     temperature=0.4,
@@ -187,55 +187,53 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
             except Exception:
                 pass
-        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً.")
+        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً. أضف AI_API_KEY ثم جرّب.")
         return
     else:
         await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
 
 # -----------------------------
-# نقطة التشغيل
+# نقطة تشغيل + Webhook لـ Render
 # -----------------------------
-from aiohttp import web
-
-async def _health(request):
-    return web.Response(text="OK", status=200)
-
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
 
-    application = Application.builder().token(token).build()
+    app = Application.builder().token(token).build()
 
-    # Handlers
-    application.add_handler(CommandHandler("start", start_cmd))
-    application.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
-    application.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
-    application.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
-    application.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
-    application.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
-    application.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    # أوامر وقائمة
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
+    app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
+    app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
+    app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
 
-    # aiohttp web app
-    web_app = web.Application()
-    web_app.router.add_get("/", _health)
+    # اختبار
+    app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
+    app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
 
+    # نصوص عامة
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+
+    # Webhook أو Polling
     external = os.getenv("RENDER_EXTERNAL_URL")
     port = int(os.getenv("PORT", "10000"))
 
     if external:
-        application.run_webhook(
+        app.run_webhook(
             listen="0.0.0.0",
             port=port,
             url_path=token,
             webhook_url=f"https://{external}/{token}",
-            web_app=web_app
         )
     else:
-        print("Running in polling mode...")
-        application.run_polling()
+        print("Running in polling (no RENDER_EXTERNAL_URL found)")
+        app.run_polling()
+
+    return app
+
 
 if __name__ == "__main__":
     main()
