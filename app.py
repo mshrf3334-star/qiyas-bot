@@ -6,6 +6,8 @@ from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     MessageHandler, ContextTypes, filters
 )
+from aiohttp import web
+
 
 # -----------------------------
 # تحميل الأسئلة من data.json
@@ -37,7 +39,7 @@ QUESTIONS: List[Dict] = load_questions("data.json")
 
 
 # -----------------------------
-# واجهة القائمة الرئيسية
+# الواجهة الرئيسية
 # -----------------------------
 def _make_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -56,7 +58,7 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -----------------------------
-# منطق بنك الأسئلة
+# منطق الأسئلة
 # -----------------------------
 def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Optional[Dict]:
     asked = context.user_data.get("asked_ids")
@@ -78,7 +80,7 @@ def _question_markup(q: Dict) -> InlineKeyboardMarkup:
 
 
 # -----------------------------
-# Handlers القائمة
+# Handlers
 # -----------------------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_menu(update, context)
@@ -107,7 +109,7 @@ async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -----------------------------
-# اختبار قياس: التحقق والإكمال
+# إجابة الاختبار
 # -----------------------------
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -149,7 +151,7 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # -----------------------------
-# جدول الضرب + الذكاء الاصطناعي
+# نصوص عامة
 # -----------------------------
 def _make_table(n: int) -> str:
     lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
@@ -164,76 +166,42 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         n = int(txt)
         await update.message.reply_text(_make_table(n))
-        return
     elif mode == "ai":
-        question = (update.message.text or "").strip()
-        api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
-        if api_key:
-            try:
-                from openai import OpenAI
-                client = OpenAI(api_key=api_key)
-                model = os.getenv("AI_MODEL", "gpt-4o-mini")
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": "أجب باختصار وبالعربية."},
-                        {"role": "user", "content": question},
-                    ],
-                    temperature=0.4,
-                    max_tokens=400,
-                )
-                answer = resp.choices[0].message.content.strip()
-                await update.message.reply_text(answer)
-                return
-            except Exception:
-                pass
-        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً. أضف AI_API_KEY ثم جرّب.")
-        return
+        await update.message.reply_text("ميزة الذكاء الاصطناعي جاهزة (تحتاج مفتاح API).")
     else:
         await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
 
 # -----------------------------
-# نقطة تشغيل + Webhook لـ Render
+# تشغيل البوت مع aiohttp
 # -----------------------------
-def main():
+async def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
 
     app = Application.builder().token(token).build()
 
-    # أوامر وقائمة
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
     app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
     app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
     app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
-
-    # اختبار
     app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
     app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
-
-    # نصوص عامة
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
-    # Webhook أو Polling
-    external = os.getenv("RENDER_EXTERNAL_URL")
+    runner = web.AppRunner(app.web_app)
+    await runner.setup()
     port = int(os.getenv("PORT", "10000"))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
 
-    if external:
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            url_path=token,
-            webhook_url=f"https://{external}/{token}",
-        )
-    else:
-        print("Running in polling (no RENDER_EXTERNAL_URL found)")
-        app.run_polling()
-
-    return app
-
+    print(f"Bot running on port {port}")
+    await app.start()
+    await app.updater.start_polling()
+    await app.updater.idle()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
