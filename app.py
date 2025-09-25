@@ -10,9 +10,7 @@ logging.basicConfig(level=logging.INFO)
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 AI_API_KEY = os.environ.get("AI_API_KEY")
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
-RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")
 
-# تأكد أن التوكن موجود
 if not BOT_TOKEN:
     raise ValueError("❌ BOT_TOKEN غير موجود في Render")
 
@@ -22,7 +20,6 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 # تطبيق Flask
 app = Flask(__name__)
 
-# استقبال التحديثات من تيليجرام
 @app.route("/webhook", methods=["POST"])
 def webhook():
     update = request.get_json()
@@ -32,16 +29,12 @@ def webhook():
         chat_id = update["message"]["chat"]["id"]
         user_text = update["message"]["text"]
 
-        # الرد من OpenAI
         reply = ask_openai(user_text)
-
-        # إرسال الرد للعميل
         send_message(chat_id, reply)
 
     return {"ok": True}
 
 def ask_openai(prompt):
-    """يتواصل مع OpenAI"""
     try:
         url = "https://api.openai.com/v1/chat/completions"
         headers = {
@@ -53,7 +46,6 @@ def ask_openai(prompt):
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": 500
         }
-
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
             result = response.json()
@@ -66,12 +58,10 @@ def ask_openai(prompt):
         return "⚠️ خطأ أثناء الاتصال بالذكاء الاصطناعي"
 
 def send_message(chat_id, text):
-    """يرسل رسالة للعميل"""
     try:
         url = f"{TELEGRAM_API_URL}/sendMessage"
         payload = {"chat_id": chat_id, "text": text}
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
+        requests.post(url, json=payload)
     except Exception as e:
         logging.error(f"Telegram send error: {e}")
 
@@ -79,15 +69,6 @@ def send_message(chat_id, text):
 def home():
     return "🤖 البوت شغال على Render!"
 
-# ضبط Webhook تلقائي
-def set_webhook():
-    if RENDER_EXTERNAL_URL:
-        webhook_url = f"{RENDER_EXTERNAL_URL}/webhook"
-        url = f"{TELEGRAM_API_URL}/setWebhook"
-        response = requests.post(url, json={"url": webhook_url})
-        logging.info(f"SetWebhook: {response.text}")
-
 if __name__ == "__main__":
-    set_webhook()
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
