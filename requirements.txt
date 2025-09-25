@@ -1,5 +1,0 @@
-flask
-gunicorn
-requests
-python-telegram-bot==20.6
-openai
