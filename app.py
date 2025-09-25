@@ -1,69 +1,72 @@
 import os
-from flask import Flask
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler,
-    MessageHandler, ContextTypes, filters
-)
+import logging
+from flask import Flask, request
+import requests
 
-# إنشاء كائن Flask
-flask_app = Flask(__name__)
+# إعداد اللوق
+logging.basicConfig(level=logging.INFO)
 
-# مسار صحي لـ Render
-@flask_app.route("/")
-def health():
-    return "OK", 200
+# قراءة المتغيرات من Render (Environment Variables)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+AI_API_KEY = os.environ.get("AI_API_KEY")
+AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
 
-# توكن البوت
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN")
-
+# تأكد أن التوكن موجود
 if not BOT_TOKEN:
-    raise RuntimeError("❌ لم يتم العثور على TELEGRAM_BOT_TOKEN في المتغيرات")
+    raise ValueError("❌ BOT_TOKEN غير موجود في Render")
 
-# إنشاء تطبيق تيليجرام
-application = Application.builder().token(BOT_TOKEN).build()
+# روابط تيليجرام
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# ---------- أوامر بسيطة ----------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = [
-        [InlineKeyboardButton("🤖 جرّب الذكاء الاصطناعي", callback_data="ai")],
-        [InlineKeyboardButton("📚 جدول الضرب", callback_data="mult")],
-    ]
-    await update.message.reply_text("👋 مرحباً! اختر من القائمة:", 
-                                    reply_markup=InlineKeyboardMarkup(kb))
+# تطبيق Flask
+app = Flask(__name__)
 
-async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    await q.edit_message_text("✍️ اكتب سؤالك للذكاء الاصطناعي:")
+# استقبال التحديثات من تيليجرام
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    update = request.get_json()
+    logging.info(update)
 
-async def menu_mult(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    await q.edit_message_text("📌 أرسل رقمًا (مثال: 7) وسأعرض لك جدول ضربه 1..12")
+    if "message" in update and "text" in update["message"]:
+        chat_id = update["message"]["chat"]["id"]
+        user_text = update["message"]["text"]
 
-async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = (update.message.text or "").strip()
-    if txt.isdigit():
-        n = int(txt)
-        table = "\n".join([f"{i} × {n} = {i*n}" for i in range(1, 13)])
-        await update.message.reply_text("📚 جدول الضرب:\n" + table)
-    else:
-        await update.message.reply_text("🤖 حالياً ميزة الذكاء الاصطناعي تجريبية.")
+        # الرد من OpenAI
+        reply = ask_openai(user_text)
 
-# ---------- ربط الهاندلرز ----------
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CallbackQueryHandler(menu_ai, pattern="^ai$"))
-application.add_handler(CallbackQueryHandler(menu_mult, pattern="^mult$"))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
+        # إرسال الرد للعميل
+        send_message(chat_id, reply)
 
+    return {"ok": True}
 
-# ---------- تشغيل البوت مع Render ----------
+def ask_openai(prompt):
+    """يتواصل مع OpenAI"""
+    try:
+        url = "https://api.openai.com/v1/responses"
+        headers = {"Authorization": f"Bearer {AI_API_KEY}"}
+        data = {"model": AI_MODEL, "input": prompt}
+
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            return result["output"][0]["content"][0]["text"]
+        else:
+            logging.error(response.text)
+            return "❌ حصل خطأ من OpenAI"
+    except Exception as e:
+        logging.error(e)
+        return "⚠️ خطأ أثناء الاتصال بالذكاء الاصطناعي"
+
+def send_message(chat_id, text):
+    """يرسل رسالة للعميل"""
+    url = f"{TELEGRAM_API_URL}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text}
+    requests.post(url, json=payload)
+
+@app.route("/")
+def home():
+    return "🤖 البوت شغال على Render!"
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "10000"))
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        url_path=BOT_TOKEN,
-        webhook_url=f"{os.getenv('RENDER_EXTERNAL_URL')}/{BOT_TOKEN}"
-    )
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
