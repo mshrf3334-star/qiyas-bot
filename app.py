@@ -36,7 +36,7 @@ def load_questions(path: str = "data.json") -> List[Dict]:
 QUESTIONS: List[Dict] = load_questions("data.json")
 
 # -----------------------------
-# الواجهة الرئيسية
+# واجهة القائمة الرئيسية
 # -----------------------------
 def _make_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -54,7 +54,7 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
 
 # -----------------------------
-# منطق الأسئلة
+# منطق بنك الأسئلة
 # -----------------------------
 def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Optional[Dict]:
     asked = context.user_data.get("asked_ids")
@@ -75,7 +75,7 @@ def _question_markup(q: Dict) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 # -----------------------------
-# Handlers
+# Handlers القائمة
 # -----------------------------
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_menu(update, context)
@@ -103,7 +103,7 @@ async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
 
 # -----------------------------
-# إجابة الاختبار
+# اختبار قياس
 # -----------------------------
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -144,7 +144,7 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
 
 # -----------------------------
-# نصوص عامة
+# جدول الضرب + الذكاء الاصطناعي
 # -----------------------------
 def _make_table(n: int) -> str:
     lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
@@ -159,13 +159,36 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         n = int(txt)
         await update.message.reply_text(_make_table(n))
+        return
     elif mode == "ai":
-        await update.message.reply_text("ميزة الذكاء الاصطناعي جاهزة (تحتاج مفتاح API).")
+        question = (update.message.text or "").strip()
+        api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if api_key:
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=api_key)
+                model = os.getenv("AI_MODEL", "gpt-4o-mini")
+                resp = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "أجب باختصار وبالعربية."},
+                        {"role": "user", "content": question},
+                    ],
+                    temperature=0.4,
+                    max_tokens=400,
+                )
+                answer = resp.choices[0].message.content.strip()
+                await update.message.reply_text(answer)
+                return
+            except Exception:
+                pass
+        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً.")
+        return
     else:
         await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
 # -----------------------------
-# تشغيل البوت (Polling) في Render
+# نقطة تشغيل + Webhook لـ Render
 # -----------------------------
 def main():
     token = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -174,6 +197,7 @@ def main():
 
     app = Application.builder().token(token).build()
 
+    # أوامر وقائمة
     app.add_handler(CommandHandler("start", start_cmd))
     app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
     app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
@@ -183,9 +207,19 @@ def main():
     app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
 
-    # Polling (أبسط وأضمن في Render)
-    print("🤖 Bot is running (polling mode)...")
-    app.run_polling()
+    # Webhook لِـ Render
+    external = os.getenv("RENDER_EXTERNAL_URL")
+    port = int(os.getenv("PORT", "10000"))
+
+    if external:
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            url_path=token,
+            webhook_url=f"https://{external}/{token}",
+        )
+    else:
+        app.run_polling()
 
 if __name__ == "__main__":
     main()
