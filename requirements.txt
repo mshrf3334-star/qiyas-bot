@@ -3,12 +3,4 @@ gunicorn
 requests
 python-telegram-bot==20.6
 openai
-pandas
-numpy
-scikit-learn
-matplotlib
-jinja2
-itsdangerous
-click
-tqdm
 aiohttp
