@@ -1,29 +1,79 @@
-import os, json, random
+# -*- coding: utf-8 -*-
+"""
+بوت قياس — Telegram + Render
+يشمل:
+- قائمة رئيسية (جدول الضرب • الذكاء الاصطناعي • اختبر نفسك)
+- بنك أسئلة من data.json (يدعم صيغ متعددة)
+- تشغيلتين: Polling أو Webhook عبر Flask
+- مسار صحي لِـ Render "/"
+- متغيرات البيئة: TELEGRAM_BOT_TOKEN, MODE, PORT, AI_API_KEY/OPENAI_API_KEY, AI_MODEL, WEBHOOK_URL
+"""
+
+import os, json, random, logging, asyncio
 from typing import List, Dict, Optional
 
+# Telegram Bot API (python-telegram-bot v20+)
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler,
+    Application, ApplicationBuilder, CommandHandler, CallbackQueryHandler,
     MessageHandler, ContextTypes, filters
 )
 
-# -----------------------------
-# تحميل الأسئلة من data.json
-# -----------------------------
-def load_questions(path: str = "data.json") -> List[Dict]:
-    with open(path, "r", encoding="utf-8") as f:
-        raw = json.load(f)
+# Flask لاستقبال الويبهوك وعمل health check على Render
+from flask import Flask, request, jsonify
 
-    norm = []
+# =======================================
+# الإعدادات العامة + اللوجينغ
+# =======================================
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    level=logging.INFO,
+)
+log = logging.getLogger("qiyas-bot")
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+AI_KEY = (os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
+AI_MODEL = os.getenv("AI_MODEL", "gpt-4o-mini").strip()
+PORT = int(os.getenv("PORT", "10000"))
+MODE = os.getenv("MODE", "polling").strip().lower()   # polling | webhook
+PUBLIC_URL = (
+    os.getenv("WEBHOOK_URL")
+    or os.getenv("RENDER_EXTERNAL_URL")
+    or os.getenv("PUBLIC_URL")
+    or ""
+).strip()
+
+if not TELEGRAM_TOKEN:
+    raise RuntimeError("⚠️ TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
+
+# =======================================
+# بنك الأسئلة من data.json
+# =======================================
+def load_questions(path: str = "data.json") -> List[Dict]:
+    """
+    يدعم شكلين:
+    1) {"question": "...", "choices": [...], "answer_index": 1, "explanation": "..."}
+    2) {"question": "...", "options":  [...], "answer":        "...", "explanation": "..."}
+    ويُرجع قائمة موحّدة:
+       {"id","q","choices","correct","explanation"}
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except FileNotFoundError:
+        log.warning("⚠️ لم يتم العثور على data.json — سيتم تشغيل البوت بدون أسئلة.")
+        return []
+
+    norm: List[Dict] = []
     for i, item in enumerate(raw, start=1):
         qtxt = item.get("question") or item.get("q") or ""
         choices = item.get("choices") or item.get("options") or []
         if not choices and "answer" in item:
             choices = [item["answer"]]
-        if "answer_index" in item and 0 <= item["answer_index"] < len(choices):
+        if "answer_index" in item and isinstance(item["answer_index"], int) and 0 <= item["answer_index"] < len(choices):
             correct = choices[item["answer_index"]]
         else:
-            correct = item.get("answer", "")
+            correct = item.get("answer", choices[0] if choices else "")
         norm.append({
             "id": str(item.get("id", i)),
             "q": qtxt,
@@ -35,9 +85,9 @@ def load_questions(path: str = "data.json") -> List[Dict]:
 
 QUESTIONS: List[Dict] = load_questions("data.json")
 
-# -----------------------------
+# =======================================
 # واجهة القائمة الرئيسية
-# -----------------------------
+# =======================================
 def _make_menu_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 جدول الضرب", callback_data="menu_mult")],
@@ -53,9 +103,9 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("👋 مرحباً! اختر من القائمة:", reply_markup=_make_menu_kb())
 
-# -----------------------------
+# =======================================
 # منطق بنك الأسئلة
-# -----------------------------
+# =======================================
 def _pick_next_question(context: ContextTypes.DEFAULT_TYPE) -> Optional[Dict]:
     asked = context.user_data.get("asked_ids")
     if asked is None:
@@ -74,9 +124,9 @@ def _question_markup(q: Dict) -> InlineKeyboardMarkup:
                for idx, choice in enumerate(q["choices"])]
     return InlineKeyboardMarkup(buttons)
 
-# -----------------------------
+# =======================================
 # Handlers القائمة
-# -----------------------------
+# =======================================
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_menu(update, context)
 
@@ -102,9 +152,9 @@ async def menu_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["mode"] = "ai"
     await q.edit_message_text("اكتب سؤالك للذكاء الاصطناعي.\n\nللرجوع للقائمة: /start")
 
-# -----------------------------
-# اختبار قياس
-# -----------------------------
+# =======================================
+# اختبار قياس: التحقق والإكمال
+# =======================================
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
@@ -143,9 +193,9 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await q.edit_message_text(text=f"📝 سؤال: {nxt['q']}", reply_markup=_question_markup(nxt))
 
-# -----------------------------
+# =======================================
 # جدول الضرب + الذكاء الاصطناعي
-# -----------------------------
+# =======================================
 def _make_table(n: int) -> str:
     lines = [f"{i} × {n} = {i*n}" for i in range(1, 13)]
     return "📚 جدول الضرب\n" + "\n".join(lines)
@@ -162,14 +212,15 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     elif mode == "ai":
         question = (update.message.text or "").strip()
-        api_key = os.getenv("AI_API_KEY") or os.getenv("OPENAI_API_KEY")
-        if api_key:
+        if not question:
+            return
+        if AI_KEY:
             try:
+                # مكتبة openai الجديدة (>=1.0)
                 from openai import OpenAI
-                client = OpenAI(api_key=api_key)
-                model = os.getenv("AI_MODEL", "gpt-4o-mini")
+                client = OpenAI(api_key=AI_KEY)
                 resp = client.chat.completions.create(
-                    model=model,
+                    model=AI_MODEL,
                     messages=[
                         {"role": "system", "content": "أجب باختصار وبالعربية."},
                         {"role": "user", "content": question},
@@ -180,46 +231,107 @@ async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 answer = resp.choices[0].message.content.strip()
                 await update.message.reply_text(answer)
                 return
-            except Exception:
-                pass
-        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً.")
+            except Exception as e:
+                log.exception("AI error: %s", e)
+        await update.message.reply_text("🤖 ميزة الذكاء الاصطناعي غير مفعلة حالياً. أضف AI_API_KEY ثم جرّب.")
         return
     else:
         await update.message.reply_text("اختر من القائمة:", reply_markup=_make_menu_kb())
 
-# -----------------------------
-# نقطة تشغيل + Webhook لـ Render
-# -----------------------------
-def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN غير موجود في المتغيرات.")
-
-    app = Application.builder().token(token).build()
+# =======================================
+# إنشاء تطبيق التيليجرام
+# =======================================
+def build_telegram_app() -> Application:
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     # أوامر وقائمة
-    app.add_handler(CommandHandler("start", start_cmd))
-    app.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
-    app.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
-    app.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
-    app.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
-    app.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
-    app.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    application.add_handler(CommandHandler("start", start_cmd))
+    application.add_handler(CallbackQueryHandler(menu_quiz, pattern="^menu_quiz$"))
+    application.add_handler(CallbackQueryHandler(menu_mult, pattern="^menu_mult$"))
+    application.add_handler(CallbackQueryHandler(menu_ai, pattern="^menu_ai$"))
+    application.add_handler(CallbackQueryHandler(show_menu, pattern="^menu_home$"))
 
-    # Webhook لِـ Render
-    external = os.getenv("RENDER_EXTERNAL_URL")
-    port = int(os.getenv("PORT", "10000"))
+    # اختبار
+    application.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz_ans:\d+$"))
+    application.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiz_next$"))
 
-    if external:
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            url_path=token,
-            webhook_url=f"https://{external}/{token}",
-        )
+    # نصوص عامة
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+
+    return application
+
+telegram_app: Application = build_telegram_app()
+
+# =======================================
+# Flask (للويبهوك + Health Check)
+# =======================================
+flask_app = Flask(__name__)
+
+@flask_app.get("/")
+def health_root():
+    return "OK ✅", 200
+
+@flask_app.post("/webhook")
+def webhook_receiver():
+    """
+    يستقبل تحديثات تيليجرام (Webhook).
+    لكي يعمل: عيّن MODE=webhook و WEBHOOK_URL (أو تعتمد على RENDER_EXTERNAL_URL)
+    ثم سيتم استدعاء /webhook من تيليجرام.
+    """
+    try:
+        update = Update.de_json(request.get_json(force=True), telegram_app.bot)
+        # تمرير التحديث إلى PTB (يحتاج loop يعمل)
+        asyncio.get_event_loop().create_task(telegram_app.process_update(update))
+        return jsonify(ok=True)
+    except Exception as e:
+        log.exception("webhook error: %s", e)
+        return jsonify(ok=False, error=str(e)), 500
+
+# =======================================
+# التشغيل
+# =======================================
+async def _set_webhook_if_needed():
+    """يضبط Webhook في وضع الويبهوك."""
+    if MODE != "webhook":
+        return
+    if not PUBLIC_URL:
+        log.warning("⚠️ MODE=webhook لكن لم يُحدد PUBLIC_URL/RENDER_EXTERNAL_URL/WEBHOOK_URL.")
+        return
+    url = PUBLIC_URL.rstrip("/") + "/webhook"
+    try:
+        await telegram_app.bot.set_webhook(url)
+        log.info("✅ Webhook set to: %s", url)
+    except Exception as e:
+        log.exception("Failed to set webhook: %s", e)
+
+def run_polling():
+    """تشغيل البوت بالـPolling (لا يحتاج استقبال HTTP من تيليجرام)."""
+    log.info("🚀 Starting Telegram polling...")
+    telegram_app.run_polling(close_loop=False)  # لا تغلق اللوب؛ ليسمح لـ Flask إن احتجنا
+
+def run_webhook():
+    """
+    تشغيل Flask (ليستمع على $PORT) + حدث التيليجرام داخل نفس العملية.
+    في Render استخدم Gunicorn:
+        Procfile: web: gunicorn app:flask_app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 120
+    أو Start Command:
+        gunicorn app:flask_app --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 120
+    """
+    # تأكيد ضبط الويبهوك
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(_set_webhook_if_needed())
+
+    log.info("🌐 Starting Flask on port %s (webhook mode)", PORT)
+    # تشغيل Flask (Blocking)
+    flask_app.run(host="0.0.0.0", port=PORT)
+
+def main():
+    if MODE == "webhook":
+        # مخصص لـ Render + Gunicorn
+        run_webhook()
     else:
-        app.run_polling()
+        # أسهل: تشغيل مباشر
+        run_polling()
 
 if __name__ == "__main__":
     main()
