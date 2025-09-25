@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 AI_API_KEY = os.environ.get("AI_API_KEY")
 AI_MODEL = os.environ.get("AI_MODEL", "gpt-4o-mini")
+RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL")
 
 # تأكد أن التوكن موجود
 if not BOT_TOKEN:
@@ -78,6 +79,15 @@ def send_message(chat_id, text):
 def home():
     return "🤖 البوت شغال على Render!"
 
+# ضبط Webhook تلقائي
+def set_webhook():
+    if RENDER_EXTERNAL_URL:
+        webhook_url = f"{RENDER_EXTERNAL_URL}/webhook"
+        url = f"{TELEGRAM_API_URL}/setWebhook"
+        response = requests.post(url, json={"url": webhook_url})
+        logging.info(f"SetWebhook: {response.text}")
+
 if __name__ == "__main__":
+    set_webhook()
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
