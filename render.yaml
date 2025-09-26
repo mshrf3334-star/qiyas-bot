@@ -1,6 +1,14 @@
 services:
   - type: web
-    name: qiyas-bot
+    name: qiyas-bot-v2
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python3 app.py
+    plan: free
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gpt-4o-mini
