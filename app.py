@@ -1,6 +1,8 @@
-# app.py — Telegram Bot (Webhook only on Render)
+# app.py
 import os
 import logging
+from fastapi import FastAPI, Request
+import uvicorn
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import (
@@ -8,138 +10,109 @@ from telegram.ext import (
     ConversationHandler, ContextTypes, filters
 )
 
-# وحدات الميزات
-from multiplication import (
-    multiplication_table_handler,
-    generate_multiplication_table,
-    ASK_FOR_NUMBER,
-)
-from cognitive_questions import (
-    start_cognitive_quiz,
-    handle_answer,
-    SELECTING_ANSWER,
-)
+# وحداتك
+from multiplication import multiplication_table_handler, generate_multiplication_table
+from cognitive_questions import start_cognitive_quiz, handle_answer, SELECTING_ANSWER
 from intelligence_questions import (
-    start_intelligence_quiz,
-    handle_intelligence_answer,
-    SELECTING_INTELLIGENCE_ANSWER,
+    start_intelligence_quiz, handle_intelligence_answer, SELECTING_INTELLIGENCE_ANSWER
 )
 from ask_qiyas_ai import ask_qiyas_ai_handler
 
-# ========= الإعدادات =========
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-PORT = int(os.getenv("PORT", "10000"))
-
-# Render يوفّر هذا المتغير تلقائياً؛ ويمكنك أيضاً ضبط WEBHOOK_URL يدوياً إن أردت
-BASE_URL = (os.getenv("WEBHOOK_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
+BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
+PORT        = int(os.environ.get("PORT", "10000"))
+WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
 
 if not BOT_TOKEN:
-    raise RuntimeError("❌ TELEGRAM_BOT_TOKEN غير مضبوط.")
-if not BASE_URL:
-    raise RuntimeError("❌ لم يتم تحديد رابط الويب هوك. اضبط WEBHOOK_URL أو اعتمد على RENDER_EXTERNAL_URL.")
+    raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
+if not WEBHOOK_URL:
+    raise RuntimeError("WEBHOOK_URL مفقود (ضع رابط خدمة Render العامة)")
 
-# ========= تسجيل =========
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
+    level=logging.INFO
 )
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logger = logging.getLogger("bot")
+logger = logging.getLogger(__name__)
 
-# ========= واجهة المستخدم =========
-BTN_MULT = "جدول الضرب"
-BTN_COG  = "اختبر قدراتك (500 سؤال)"
-BTN_AI   = "اسأل قياس (ذكاء اصطناعي)"
-BTN_IQ   = "أسئلة الذكاء (300 سؤال)"
+ASK_FOR_NUMBER = 0
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = [
-        [KeyboardButton(BTN_MULT)],
-        [KeyboardButton(BTN_COG)],
-        [KeyboardButton(BTN_AI)],
-        [KeyboardButton(BTN_IQ)],
+        [KeyboardButton("جدول الضرب")],
+        [KeyboardButton("اختبر قدراتك (500 سؤال)")],
+        [KeyboardButton("اسأل قياس (ذكاء اصطناعي)")],
+        [KeyboardButton("أسئلة الذكاء (300 سؤال)")],
     ]
     await update.message.reply_html(
         "مرحباً! اختر من القائمة 👇",
-        reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True),
+        reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True)
     )
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "استخدم الأزرار أو الأوامر:\n"
-        "/multiplication /cognitive /intelligence /ask_ai"
-    )
+    await update.message.reply_text("استخدم: /multiplication /cognitive /intelligence /ask_ai")
 
 async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
-    if t == BTN_MULT:
+    if t == "جدول الضرب":
         await multiplication_table_handler(update, context)
-    elif t == BTN_COG:
+    elif t == "اختبر قدراتك (500 سؤال)":
         await start_cognitive_quiz(update, context)
-    elif t == BTN_AI:
+    elif t == "اسأل قياس (ذكاء اصطناعي)":
         await update.message.reply_text("اكتب سؤالك بالأمر: /ask_ai سؤالك هنا")
-    elif t == BTN_IQ:
+    elif t == "أسئلة الذكاء (300 سؤال)":
         await start_intelligence_quiz(update, context)
     else:
         await update.message.reply_text("اختر من القائمة.")
 
-# ========= بناء التطبيق والهاندلرز =========
-def build_app() -> Application:
+def build_ptb_app() -> Application:
     app = Application.builder().token(BOT_TOKEN).build()
 
-    # أوامر عامة
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
 
-    # جدول الضرب
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("multiplication", multiplication_table_handler)],
         states={ASK_FOR_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_multiplication_table)]},
         fallbacks=[CommandHandler("start", start)],
-        name="multiplication_conv",
-        persistent=False,
     ))
 
-    # القدرات المعرفية
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("cognitive", start_cognitive_quiz)],
-        states={SELECTING_ANSWER: [MessageHandler(filters.TEXT | filters.CallbackQueryFilter(), handle_answer)]},
+        states={SELECTING_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)]},
         fallbacks=[CommandHandler("start", start)],
-        name="cognitive_conv",
-        persistent=False,
     ))
 
-    # الذكاء (ألغاز)
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("intelligence", start_intelligence_quiz)],
-        states={SELECTING_INTELLIGENCE_ANSWER: [MessageHandler(filters.TEXT | filters.CallbackQueryFilter(), handle_intelligence_answer)]},
+        states={SELECTING_INTELLIGENCE_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_intelligence_answer)]},
         fallbacks=[CommandHandler("start", start)],
-        name="intelligence_conv",
-        persistent=False,
     ))
 
-    # اسأل قياس (ذكاء اصطناعي)
     app.add_handler(CommandHandler("ask_ai", ask_qiyas_ai_handler))
-
-    # أزرار القائمة النصية
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu))
 
     return app
 
-# ========= التشغيل بالويب هوك فقط =========
-def main():
-    app = build_app()
+ptb = build_ptb_app()
+fastapi_app = FastAPI()
 
-    public_webhook = f"{BASE_URL}/{BOT_TOKEN}"
-    logger.info("Starting webhook on %s (port %s)", public_webhook, PORT)
+@fastapi_app.get("/")
+async def root():
+    return {"ok": True, "service": "qiyas-bot"}
 
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=BOT_TOKEN,                 # مسار سري
-        webhook_url=public_webhook,         # العنوان الخارجي
-        drop_pending_updates=True,
-    )
+@fastapi_app.post(f"/{BOT_TOKEN}")
+async def telegram_webhook(request: Request):
+    data = await request.json()
+    update = Update.de_json(data, ptb.bot)
+    await ptb.process_update(update)
+    return {"ok": True}
 
 if __name__ == "__main__":
-    main()
+    # اضبط الويب هوك مرة واحدة (أو من ملف مستقل)
+    import asyncio
+    async def _set_hook():
+        await ptb.initialize()
+        await ptb.bot.set_webhook(url=f"{WEBHOOK_URL}/{BOT_TOKEN}", drop_pending_updates=True)
+        await ptb.shutdown()  # سنشغل المعالجة عبر FastAPI
+    asyncio.run(_set_hook())
+
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=PORT)
