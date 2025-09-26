@@ -1,160 +1,144 @@
-# app.py — Webhook only (محسّن)
+# app.py — Telegram Bot (Webhook only on Render)
 import os
 import logging
-from typing import Iterable
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.constants import ChatAction, ParseMode
 from telegram.ext import (
-    Application, CommandHandler, MessageHandler, ConversationHandler,
-    ContextTypes, filters, AIORateLimiter
+    Application, CommandHandler, MessageHandler,
+    ConversationHandler, ContextTypes, filters
 )
 
-# وحداتك
-from multiplication import multiplication_table_handler, generate_multiplication_table
-from cognitive_questions import start_cognitive_quiz, handle_answer, SELECTING_ANSWER
+# وحدات الميزات
+from multiplication import (
+    multiplication_table_handler,
+    generate_multiplication_table,
+    ASK_FOR_NUMBER,
+)
+from cognitive_questions import (
+    start_cognitive_quiz,
+    handle_answer,
+    SELECTING_ANSWER,
+)
 from intelligence_questions import (
-    start_intelligence_quiz, handle_intelligence_answer, SELECTING_INTELLIGENCE_ANSWER
+    start_intelligence_quiz,
+    handle_intelligence_answer,
+    SELECTING_INTELLIGENCE_ANSWER,
 )
 from ask_qiyas_ai import ask_qiyas_ai_handler
 
-# ===== إعدادات =====
-BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
-PORT        = int(os.environ.get("PORT", "10000"))
-WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
+# ========= الإعدادات =========
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+PORT = int(os.getenv("PORT", "10000"))
+
+# Render يوفّر هذا المتغير تلقائياً؛ ويمكنك أيضاً ضبط WEBHOOK_URL يدوياً إن أردت
+BASE_URL = (os.getenv("WEBHOOK_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
 
 if not BOT_TOKEN:
-    raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
-if not WEBHOOK_URL:
-    raise RuntimeError("WEBHOOK_URL مفقود (ضع رابط خدمة Render العامة)")
+    raise RuntimeError("❌ TELEGRAM_BOT_TOKEN غير مضبوط.")
+if not BASE_URL:
+    raise RuntimeError("❌ لم يتم تحديد رابط الويب هوك. اضبط WEBHOOK_URL أو اعتمد على RENDER_EXTERNAL_URL.")
 
+# ========= تسجيل =========
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO
+    level=logging.INFO,
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logger = logging.getLogger("qiyas-bot")
+logger = logging.getLogger("bot")
 
-ASK_FOR_NUMBER = 0
+# ========= واجهة المستخدم =========
+BTN_MULT = "جدول الضرب"
+BTN_COG  = "اختبر قدراتك (500 سؤال)"
+BTN_AI   = "اسأل قياس (ذكاء اصطناعي)"
+BTN_IQ   = "أسئلة الذكاء (300 سؤال)"
 
-# ===== Utilities =====
-def chunk_text(text: str, limit: int = 4000) -> Iterable[str]:
-    """يقسم النص لقطع تلائم حد تيليجرام."""
-    text = text or ""
-    for i in range(0, len(text), limit):
-        yield text[i:i+limit]
-
-async def safe_reply(update: Update, text: str, **kw):
-    """يرسل نص طويل على دفعات تلقائياً."""
-    for piece in chunk_text(text):
-        await update.effective_message.reply_text(piece, **kw)
-
-# ===== واجهة المستخدم =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     kb = [
-        [KeyboardButton("جدول الضرب")],
-        [KeyboardButton("اختبر قدراتك (500 سؤال)")],
-        [KeyboardButton("أسئلة الذكاء (300 سؤال)")],
-        [KeyboardButton("اسأل قياس (ذكاء اصطناعي)")],
+        [KeyboardButton(BTN_MULT)],
+        [KeyboardButton(BTN_COG)],
+        [KeyboardButton(BTN_AI)],
+        [KeyboardButton(BTN_IQ)],
     ]
     await update.message.reply_html(
         "مرحباً! اختر من القائمة 👇",
-        reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(kb, resize_keyboard=True),
     )
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "الأوامر المتاحة:\n"
-        "/multiplication — جدول الضرب\n"
-        "/cognitive — اختبار القدرات (500)\n"
-        "/intelligence — أسئلة ذكاء (300)\n"
-        "/ask_ai سؤالك — اسأل الذكاء الاصطناعي\n"
-        "/ping — فحص سريع"
+        "استخدم الأزرار أو الأوامر:\n"
+        "/multiplication /cognitive /intelligence /ask_ai"
     )
-
-async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ البوت شغّال.")
 
 async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
-    if t == "جدول الضرب":
+    if t == BTN_MULT:
         await multiplication_table_handler(update, context)
-    elif t == "اختبر قدراتك (500 سؤال)":
+    elif t == BTN_COG:
         await start_cognitive_quiz(update, context)
-    elif t == "أسئلة الذكاء (300 سؤال)":
-        await start_intelligence_quiz(update, context)
-    elif t == "اسأل قياس (ذكاء اصطناعي)":
+    elif t == BTN_AI:
         await update.message.reply_text("اكتب سؤالك بالأمر: /ask_ai سؤالك هنا")
+    elif t == BTN_IQ:
+        await start_intelligence_quiz(update, context)
     else:
         await update.message.reply_text("اختر من القائمة.")
 
-# ===== أخطاء عامة =====
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.exception("Unhandled error: %s", context.error)
-    try:
-        if isinstance(update, Update) and update.effective_message:
-            await update.effective_message.reply_text(
-                "عذراً، حصل خطأ غير متوقع. جرّب لاحقاً."
-            )
-    except Exception:
-        pass
-
+# ========= بناء التطبيق والهاندلرز =========
 def build_app() -> Application:
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .rate_limiter(AIORateLimiter(max_retries=2))  # احترام قيود تيليجرام
-        .concurrent_updates(True)
-        .build()
-    )
+    app = Application.builder().token(BOT_TOKEN).build()
 
     # أوامر عامة
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
-    app.add_handler(CommandHandler("ping", ping))
 
     # جدول الضرب
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("multiplication", multiplication_table_handler)],
         states={ASK_FOR_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, generate_multiplication_table)]},
         fallbacks=[CommandHandler("start", start)],
+        name="multiplication_conv",
+        persistent=False,
     ))
 
     # القدرات المعرفية
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("cognitive", start_cognitive_quiz)],
-        states={SELECTING_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer)]},
+        states={SELECTING_ANSWER: [MessageHandler(filters.TEXT | filters.CallbackQueryFilter(), handle_answer)]},
         fallbacks=[CommandHandler("start", start)],
+        name="cognitive_conv",
+        persistent=False,
     ))
 
-    # الذكاء
+    # الذكاء (ألغاز)
     app.add_handler(ConversationHandler(
         entry_points=[CommandHandler("intelligence", start_intelligence_quiz)],
-        states={SELECTING_INTELLIGENCE_ANSWER: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_intelligence_answer)]},
+        states={SELECTING_INTELLIGENCE_ANSWER: [MessageHandler(filters.TEXT | filters.CallbackQueryFilter(), handle_intelligence_answer)]},
         fallbacks=[CommandHandler("start", start)],
+        name="intelligence_conv",
+        persistent=False,
     ))
 
     # اسأل قياس (ذكاء اصطناعي)
     app.add_handler(CommandHandler("ask_ai", ask_qiyas_ai_handler))
 
-    # أزرار القائمة
+    # أزرار القائمة النصية
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, main_menu))
 
-    app.add_error_handler(error_handler)
     return app
 
+# ========= التشغيل بالويب هوك فقط =========
 def main():
     app = build_app()
-    logger.info("Starting Webhook at %s", WEBHOOK_URL)
+
+    public_webhook = f"{BASE_URL}/{BOT_TOKEN}"
+    logger.info("Starting webhook on %s (port %s)", public_webhook, PORT)
+
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=BOT_TOKEN,                       # path سري
-        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}", # العنوان العام الكامل
-        allowed_updates=[
-            "message","edited_message","callback_query","my_chat_member","chat_member"
-        ],
-        drop_pending_updates=True
+        url_path=BOT_TOKEN,                 # مسار سري
+        webhook_url=public_webhook,         # العنوان الخارجي
+        drop_pending_updates=True,
     )
 
 if __name__ == "__main__":
