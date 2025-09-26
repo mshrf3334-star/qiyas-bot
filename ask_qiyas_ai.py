@@ -1,60 +1,100 @@
 # ask_qiyas_ai.py
-import os, asyncio
-from tenacity import retry, wait_fixed, stop_after_attempt
-from openai import OpenAI
+# — يعمل بدون tenacity — يستخدم إعادة محاولة بسيطة
+
+import os
+import logging
+import asyncio
+from typing import Optional
+
 from telegram import Update
-from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
+from openai import OpenAI
 
-AI_API_KEY = os.environ.get("AI_API_KEY", "")
-AI_MODEL   = os.environ.get("AI_MODEL", "openai/gpt-4o-mini")
+# ===== الإعدادات من المتغيرات البيئية =====
+AI_API_KEY = os.getenv("AI_API_KEY")
+AI_MODEL   = os.getenv("AI_MODEL", "gpt-4o-mini")
 
-def _chunks(s: str, n: int = 3500):
-    s = s or ""
-    for i in range(0, len(s), n):
-        yield s[i:i+n]
+logger = logging.getLogger(__name__)
+_client: Optional[OpenAI] = None
 
-@retry(wait=wait_fixed(1.5), stop=stop_after_attempt(2))
-def _ask_llm(question: str) -> str:
-    client = OpenAI(api_key=AI_API_KEY)
-    resp = client.chat.completions.create(
-        model=AI_MODEL,
-        temperature=0.3,
-        messages=[
-            {"role": "system", "content":
-             "أنت مساعد قياس ذكي بالعربية: مختصر، دقيق، وخطوة-بخطوة عند الحاجة."},
-            {"role": "user", "content": question.strip()}
-        ],
-    )
-    return (resp.choices[0].message.content or "").strip()
+
+def _get_client() -> Optional[OpenAI]:
+    """تهيئة عميل OpenAI مرة واحدة."""
+    global _client
+    if not AI_API_KEY:
+        return None
+    if _client is None:
+        _client = OpenAI(api_key=AI_API_KEY)
+    return _client
+
 
 async def ask_qiyas_ai_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles the AI-powered 'Ask Qiyas' feature."""
-    text = (update.message.text or "").replace("/ask_ai", "", 1).strip()
+    """
+    أمر: /ask_ai سؤالك هنا
+    أو: ردّ بالأمر /ask_ai على رسالة تحوي السؤال.
+    """
+    # الحصول على نص السؤال
+    question = " ".join(context.args) if context.args else None
+    if not question and update.message and update.message.reply_to_message:
+        question = update.message.reply_to_message.text
+
+    if not question:
+        await update.effective_message.reply_html(
+            "اكتب سؤالك بعد الأمر:<code> /ask_ai سؤالك </code>\n"
+            "أو ردّ بالأمر على رسالة تحتوي سؤالك."
+        )
+        return
 
     if not AI_API_KEY:
-        await update.message.reply_text("مفتاح الذكاء الاصطناعي غير مُهيأ على الخادم.")
-        return
-    if not text:
-        await update.message.reply_text("اكتب سؤالك بعد الأمر: /ask_ai سؤالك هنا")
-        return
-
-    # أظهر حالة الكتابة
-    try:
-        await update.effective_chat.send_action(ChatAction.TYPING)
-    except Exception:
-        pass
-
-    try:
-        answer = await asyncio.wait_for(
-            asyncio.to_thread(_ask_llm, text),
-            timeout=20
+        await update.effective_message.reply_text(
+            "🛑 لم يتم ضبط مفتاح الذكاء الاصطناعي (AI_API_KEY)."
         )
+        return
+
+    try:
+        answer = await _ask_llm(question)
         if not answer:
-            answer = "لم أحصل على إجابة مناسبة، جرّب إعادة الصياغة."
-        for part in _chunks(answer):
-            await update.message.reply_text(part)
-    except asyncio.TimeoutError:
-        await update.message.reply_text("المهلة انتهت ⏱️ — جرّب سؤالاً أقصر أو أعِد المحاولة.")
+            answer = "لم أستطع توليد إجابة الآن. حاول لاحقًا."
+        # حد التلغرام 4096 حرف للرسالة الواحدة
+        await update.effective_message.reply_text(answer[:4096])
     except Exception as e:
-        await update.message.reply_text(f"تعذّر إكمال الطلب: {e}")
+        logger.exception("ask_ai error: %s", e)
+        await update.effective_message.reply_text("حدث خطأ أثناء الإجابة. حاول لاحقًا.")
+
+
+async def _ask_llm(prompt: str) -> str:
+    """
+    نداء LLM مع محاولات بسيطة (3 محاولات بتأخيرات 0s/1.5s/3s).
+    """
+    client = _get_client()
+    if not client:
+        return "المفتاح غير مهيأ."
+
+    delays = [0.0, 1.5, 3.0]
+    last_err: Optional[Exception] = None
+
+    for delay in delays:
+        if delay:
+            await asyncio.sleep(delay)
+        try:
+            resp = client.chat.completions.create(
+                model=AI_MODEL,
+                temperature=0.3,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "أنت مساعد قياس ذكي بالعربية: موجز، دقيق، ويشرح الخطوات عند الحاجة."
+                        ),
+                    },
+                    {"role": "user", "content": prompt.strip()},
+                ],
+            )
+            content = (resp.choices[0].message.content or "").strip()
+            return content
+        except Exception as e:
+            last_err = e
+            logger.warning("LLM call failed (will retry): %s", e)
+
+    # إذا فشلت كل المحاولات
+    raise last_err if last_err else RuntimeError("LLM call failed")
