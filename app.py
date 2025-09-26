@@ -1,4 +1,4 @@
-# app.py — Webhook only / قوي ومرن
+# app.py — Webhook-only Telegram bot on Render
 import os
 import logging
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
@@ -12,8 +12,11 @@ from multiplication import ask_for_number, handle_possible_number_message
 from cognitive_questions import start_cognitive_quiz, handle_cognitive_callback
 from intelligence_questions import start_intelligence_quiz, handle_intelligence_callback
 from ask_qiyas_ai import ask_qiyas_ai_handler
-from qiyas_200 import start_qiyas_200_quiz, handle_qiyas_200_callback  # <-- الجديد
+from qiyas_200 import (
+    start_qiyas_200_quiz, handle_qiyas_200_start, handle_qiyas_200_callback
+)
 
+# ===== إعدادات =====
 BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
 PORT        = int(os.environ.get("PORT", "10000"))
@@ -21,19 +24,23 @@ PORT        = int(os.environ.get("PORT", "10000"))
 if not BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
 if not WEBHOOK_URL:
-    raise RuntimeError("WEBHOOK_URL مفقود (ضع رابط خدمة Render العامة)")
+    raise RuntimeError("WEBHOOK_URL مفقود (ضع رابط خدمة Render العامة، مثل https://qiyas-bot.onrender.com)")
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("qiyas-bot")
 
-def main_keyboard():
+# ===== واجهة المستخدم =====
+def main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         [
             [KeyboardButton("جدول الضرب")],
             [KeyboardButton("اختبر قدراتك (500 سؤال)")],
             [KeyboardButton("أسئلة الذكاء (300 سؤال)")],
-            [KeyboardButton("اختبار قياس (200 سؤال)")],  # <-- الزر الجديد
+            [KeyboardButton("اختبار قياس (200 سؤال)")],   # يفتح اختيار الحجم (200/400/800/1600/∞)
             [KeyboardButton("اسأل قياس (ذكاء اصطناعي)")],
         ],
         resize_keyboard=True,
@@ -43,7 +50,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html("مرحباً! اختر من القائمة 👇", reply_markup=main_keyboard())
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("استخدم الأزرار أو الأوامر: /multiplication /cognitive /intelligence /ask_ai", reply_markup=main_keyboard())
+    await update.message.reply_text(
+        "الأوامر: /multiplication /cognitive /intelligence /ask_ai",
+        reply_markup=main_keyboard()
+    )
 
 async def route_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
@@ -54,7 +64,7 @@ async def route_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if t == "أسئلة الذكاء (300 سؤال)":
         await start_intelligence_quiz(update, context); return
     if t == "اختبار قياس (200 سؤال)":
-        await start_qiyas_200_quiz(update, context); return  # <-- يبدأ الاختبار الطويل
+        await start_qiyas_200_quiz(update, context); return   # شاشة اختيار 200/400/800/1600/∞
     if t == "اسأل قياس (ذكاء اصطناعي)":
         await update.message.reply_text("اكتب سؤالك بالأمر: /ask_ai سؤالك هنا"); return
     await update.message.reply_text("اختر من القائمة.", reply_markup=main_keyboard())
@@ -62,38 +72,47 @@ async def route_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def unknown_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("أمر غير معروف. استخدم /help", reply_markup=main_keyboard())
 
+# ===== بناء التطبيق =====
 def build_app() -> Application:
     app = Application.builder().token(BOT_TOKEN).build()
 
+    # أوامر عامة
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
 
-    # جدول الضرب
+    # جدول الضرب (أمر مباشر)
     app.add_handler(CommandHandler("multiplication", ask_for_number))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_possible_number_message))
 
-    # أزرار القائمة
+    # أزرار القائمة (نص)
     app.add_handler(MessageHandler(filters.Regex(
         r"^(جدول الضرب|اختبر قدراتك \(500 سؤال\)|أسئلة الذكاء \(300 سؤال\)|اختبار قياس \(200 سؤال\)|اسأل قياس \(ذكاء اصطناعي\))$"
     ), route_buttons))
 
-    # CallbackQuery للأنماط
-    app.add_handler(CallbackQueryHandler(handle_cognitive_callback, pattern=r"^cog\|"))
-    app.add_handler(CallbackQueryHandler(handle_intelligence_callback, pattern=r"^iq\|"))
-    app.add_handler(CallbackQueryHandler(handle_qiyas_200_callback, pattern=r"^q200\|"))  # <-- الجديد
+    # ردود المستخدم أثناء انتظار رقم جدول الضرب أو تعبير (7x9…)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_possible_number_message))
 
+    # اختبارات بالـ CallbackQuery
+    app.add_handler(CallbackQueryHandler(handle_cognitive_callback,    pattern=r"^cog\|"))
+    app.add_handler(CallbackQueryHandler(handle_intelligence_callback, pattern=r"^iq\|"))
+    app.add_handler(CallbackQueryHandler(handle_qiyas_200_start,       pattern=r"^q200start\|"))
+    app.add_handler(CallbackQueryHandler(handle_qiyas_200_callback,    pattern=r"^q200\|"))
+
+    # الذكاء الاصطناعي
     app.add_handler(CommandHandler("ask_ai", ask_qiyas_ai_handler))
+
+    # أوامر غير معروفة
     app.add_handler(MessageHandler(filters.COMMAND, unknown_cmd))
     return app
 
+# ===== تشغيل Webhook فقط =====
 def main():
     app = build_app()
     log.info("Starting Webhook at %s", WEBHOOK_URL)
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=BOT_TOKEN,
-        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}",
+        url_path=BOT_TOKEN,                          # مسار سري
+        webhook_url=f"{WEBHOOK_URL}/{BOT_TOKEN}",    # العنوان الخارجي الكامل
         drop_pending_updates=True,
     )
 
