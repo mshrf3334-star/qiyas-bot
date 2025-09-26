@@ -1,115 +1,124 @@
+from __future__ import annotations
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 import random
 
-# Placeholder for 500 cognitive questions
-# In a real application, these would likely be loaded from a database or a file.
-# Each question could be a dictionary with 'question', 'options', 'answer'
-
+# =========================
+# بنك أسئلة (عينة - كبّرها براحتك)
+# =========================
 cognitive_questions_data = [
-    {
-        "question": "ما هو حاصل ضرب 7 × 8؟",
-        "options": ["54", "56", "63", "49"],
-        "answer": "56"
-    },
-    {
-        "question": "إذا كان لديك 5 تفاحات وأكلت 2، فكم تفاحة بقيت لديك؟",
-        "options": ["2", "3", "4", "5"],
-        "answer": "3"
-    },
-    {
-        "question": "ما هو اليوم الذي يأتي بعد الأربعاء؟",
-        "options": ["الثلاثاء", "الخميس", "الجمعة", "السبت"],
-        "answer": "الخميس"
-    },
-    {
-        "question": "أي من هذه الحيوانات يبيض؟",
-        "options": ["القطة", "الكلب", "الدجاجة", "البقرة"],
-        "answer": "الدجاجة"
-    },
-    {
-        "question": "ما هو لون السماء في يوم صافٍ؟",
-        "options": ["أخضر", "أحمر", "أزرق", "أصفر"],
-        "answer": "أزرق"
-    },
-    {
-        "question": "ما هو الشهر الأول في السنة الميلادية؟",
-        "options": ["فبراير", "مارس", "يناير", "أبريل"],
-        "answer": "يناير"
-    },
-    {
-        "question": "كم عدد أصابع اليد الواحدة؟",
-        "options": ["3", "4", "5", "6"],
-        "answer": "5"
-    },
-    {
-        "question": "ما هو عكس كلمة 'كبير'؟",
-        "options": ["طويل", "صغير", "واسع", "قصير"],
-        "answer": "صغير"
-    },
-    {
-        "question": "ما هو الصوت الذي يصدره الكلب؟",
-        "options": ["مواء", "نباح", "صهيل", "زئير"],
-        "answer": "نباح"
-    },
-    {
-        "question": "ما هي عاصمة المملكة العربية السعودية؟",
-        "options": ["جدة", "الرياض", "مكة", "الدمام"],
-        "answer": "الرياض"
-    },
+    {"question": "ما هو حاصل ضرب 7 × 8؟", "options": ["54", "56", "63", "49"], "answer": "56"},
+    {"question": "إذا كان لديك 5 تفاحات وأكلت 2، فكم تفاحة بقيت لديك؟", "options": ["2", "3", "4", "5"], "answer": "3"},
+    {"question": "ما هو اليوم الذي يأتي بعد الأربعاء؟", "options": ["الثلاثاء", "الخميس", "الجمعة", "السبت"], "answer": "الخميس"},
+    {"question": "أي من هذه الحيوانات يبيض؟", "options": ["القطة", "الكلب", "الدجاجة", "البقرة"], "answer": "الدجاجة"},
+    {"question": "ما هو لون السماء في يوم صافٍ؟", "options": ["أخضر", "أحمر", "أزرق", "أصفر"], "answer": "أزرق"},
+    {"question": "ما هو الشهر الأول في السنة الميلادية؟", "options": ["فبراير", "مارس", "يناير", "أبريل"], "answer": "يناير"},
+    {"question": "كم عدد أصابع اليد الواحدة؟", "options": ["3", "4", "5", "6"], "answer": "5"},
+    {"question": "ما هو عكس كلمة 'كبير'؟", "options": ["طويل", "صغير", "واسع", "قصير"], "answer": "صغير"},
+    {"question": "ما هو الصوت الذي يصدره الكلب؟", "options": ["مواء", "نباح", "صهيل", "زئير"], "answer": "نباح"},
+    {"question": "ما هي عاصمة المملكة العربية السعودية؟", "options": ["جدة", "الرياض", "مكة", "الدمام"], "answer": "الرياض"},
 ]
 
-# States for the conversation handler
+# حالة المحادثة
 SELECTING_ANSWER = 1
 
+
+# ========== دوال مساعدة ==========
+def _pick_questions(n: int) -> list[dict]:
+    """اختر n أسئلة عشوائية من البنك."""
+    if n >= len(cognitive_questions_data):
+        return random.sample(cognitive_questions_data, len(cognitive_questions_data))
+    return random.sample(cognitive_questions_data, n)
+
+
+async def _send_current_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """
+    يرسل السؤال الحالي. يرجع True إذا تم الإرسال،
+    و False إذا انتهت الأسئلة وتم إعلان النتيجة.
+    """
+    idx = context.user_data.get("current_question_index", 0)
+    questions: list[dict] = context.user_data.get("questions", [])
+
+    if idx >= len(questions):
+        # انتهى الاختبار
+        score = context.user_data.get("score", 0)
+        total = len(questions)
+        await update.effective_chat.send_message(
+            f"انتهى الاختبار! نتيجتك: {score} من {total}."
+        )
+        # تنظيف
+        context.user_data.clear()
+        return False
+
+    q = questions[idx]
+    # ممكن تخلط ترتيب الخيارات لو حبيت:
+    options = list(q["options"])
+    # random.shuffle(options)
+
+    keyboard = [[InlineKeyboardButton(opt, callback_data=opt)] for opt in options]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.effective_chat.send_message(
+        text=f"السؤال {idx + 1}: {q['question']}",
+        reply_markup=reply_markup,
+        disable_web_page_preview=True,
+    )
+    return True
+
+
+# ========== نقاط دخول/تعامل ==========
 async def start_cognitive_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Starts the cognitive questions quiz."""
-    context.user_data['score'] = 0
-    context.user_data['current_question_index'] = 0
-    context.user_data['questions'] = random.sample(cognitive_questions_data, min(5, len(cognitive_questions_data))) # Take 5 random questions for now
-    await ask_question(update, context)
+    """بدء الاختبار."""
+    # إعادة تهيئة الحالة
+    context.user_data.clear()
+    context.user_data["score"] = 0
+    context.user_data["current_question_index"] = 0
+    context.user_data["questions"] = _pick_questions(5)  # عدّل العدد إذا رغبت
+
+    await update.effective_message.reply_text("بدأ الاختبار ✅")
+    await _send_current_question(update, context)
     return SELECTING_ANSWER
 
-async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Sends the current question to the user."""
-    question_index = context.user_data['current_question_index']
-    questions = context.user_data['questions']
-
-    if question_index < len(questions):
-        current_q = questions[question_index]
-        question_text = f"السؤال {question_index + 1}: {current_q['question']}"
-        keyboard = [[InlineKeyboardButton(option, callback_data=option)] for option in current_q['options']]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.effective_message.reply_text(question_text, reply_markup=reply_markup)
-    else:
-        await update.effective_message.reply_text(
-            f"انتهى الاختبار! لقد أجبت على {context.user_data['score']} سؤالاً صحيحاً من أصل {len(questions)}."
-        )
-        context.user_data.clear() # Clear user data for this quiz
-        return -1 # End the conversation
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Checks the user's answer and moves to the next question."""
+    """التعامل مع اختيار المستخدم (Inline keyboard)."""
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
 
-    user_answer = query.data
-    question_index = context.user_data['current_question_index']
-    questions = context.user_data['questions']
-    current_q = questions[question_index]
+    # تأكد أن بيانات الاختبار موجودة
+    if "questions" not in context.user_data:
+        await update.effective_chat.send_message("لا يوجد اختبار نشط. اكتب /cognitive لبدء اختبار جديد.")
+        return ConversationHandler.END
 
-    if user_answer == current_q['answer']:
-        context.user_data['score'] += 1
-        await query.edit_message_text(text=f"إجابة صحيحة! النتيجة الحالية: {context.user_data['score']}")
+    idx = context.user_data.get("current_question_index", 0)
+    questions: list[dict] = context.user_data.get("questions", [])
+    if idx >= len(questions):
+        # لا يوجد سؤال حالي (انتهى)
+        await update.effective_chat.send_message("انتهى الاختبار. اكتب /cognitive لبدء اختبار جديد.")
+        context.user_data.clear()
+        return ConversationHandler.END
+
+    current_q = questions[idx]
+    user_answer = query.data if query else (update.message.text if update.message else "")
+
+    if user_answer == current_q["answer"]:
+        context.user_data["score"] = context.user_data.get("score", 0) + 1
+        await query.edit_message_text(f"✅ إجابة صحيحة! نتيجتك الحالية: {context.user_data['score']}")
     else:
-        await query.edit_message_text(text=f"إجابة خاطئة. الإجابة الصحيحة هي: {current_q['answer']}. النتيجة الحالية: {context.user_data['score']}")
+        await query.edit_message_text(f"❌ إجابة خاطئة. الصحيحة: {current_q['answer']}. نتيجتك الحالية: {context.user_data.get('score', 0)}")
 
-    context.user_data['current_question_index'] += 1
-    await ask_question(update, context)
+    # انتقل للسؤال التالي
+    context.user_data["current_question_index"] = idx + 1
+    has_more = await _send_current_question(update, context)
+    if not has_more:
+        return ConversationHandler.END
+
     return SELECTING_ANSWER
 
+
 async def cancel_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancels the quiz."""
-    await update.message.reply_text("تم إلغاء اختبار القدرات.")
+    """إلغاء الاختبار."""
     context.user_data.clear()
-    return -1 # End the conversation
+    await update.effective_message.reply_text("تم إلغاء اختبار القدرات.")
+    return ConversationHandler.END
