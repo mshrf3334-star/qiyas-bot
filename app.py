@@ -34,24 +34,39 @@ AI_MAX_TOKENS          = int(os.environ.get("AI_MAX_TOKENS", "650"))
 AI_TEMPERATURE_DEFAULT = float(os.environ.get("AI_TEMPERATURE", "0.4"))
 AI_STYLE_DEFAULT       = os.environ.get("AI_STYLE", "concise")  # concise | detailed
 
+# ===== نص الترحيب =====
+WELCOME_TEXT = (
+    "🎯 أهلاً يا محمد! هذا بوت «قياس» من إعداد أبوك أبو محمد ❤️\n"
+    "• اختر من القائمة بالأسفل لتبدأ التدريب.\n"
+    "• عندك وضعان جاهزان:\n"
+    "   - وضع اختبار سريع: إجابات مختصرة وسريعة.\n"
+    "   - وضع شرح وتدريب: خطوات مرتبة وتشجيع.\n"
+    "• تقدر تسأل سؤال حر من زر «اسأل محمد مشرف» أو بأمر /ask_ai\n\n"
+    "أوامر مهمة: /help | /ai_prefs | /mode_quick | /mode_explain"
+)
+
 def get_ai_prefs(context):
     prefs = context.user_data.setdefault("ai_prefs", {})
     prefs.setdefault("model", os.environ.get("AI_MODEL", AI_MODEL))
     prefs.setdefault("temperature", AI_TEMPERATURE_DEFAULT)
-    prefs.setdefault("style", AI_STYLE_DEFAULT)
+    prefs.setdefault("style", AI_STYLE_DEFAULT)  # concise/detailed
     return prefs
 
 def ai_system_prompt(style: str, ei_enabled: bool) -> str:
     tone = "لطيف ومطمئن" if ei_enabled else "حيادي ومباشر"
-    depth = "نقاط مختصرة مع خطوات مرقمة" if style == "concise" else "تفصيل واضح مع أمثلة قصيرة وخطوات دقيقة"
+    if style == "concise":
+        depth = "جواب سطر واحد نهائي + تلميح قصير فقط"
+    else:
+        depth = "تفصيل واضح بخطوات مرقمة وأمثلة قصيرة"
     encouragement = "اختم بجملة تشجيعية قصيرة." if ei_enabled else "التزم بالإيجاز المهني."
     return (
-        "أنت مدرّس قدرات (قياس) خبير بالعربية. "
-        f"اكتب بأسلوب {tone}. قدّم {depth}. "
-        "قسّم الإجابة إلى فقرات بعناوين قصيرة ونقاط. "
-        "اربط الخطوات بمفاهيم القدرات (كمي/لفظي) عند الحاجة. "
-        "تجنّب الحشو، واذكر القوانين الأساسية باقتضاب. "
-        f"{encouragement}"
+        "أنت مدرّس قدرات (قياس) خبير بالعربية.\n"
+        f"- اكتب بأسلوب {tone}.\n"
+        f"- قدّم {depth}.\n"
+        "- قسّم الإجابة إلى نقاط قصيرة وعناوين عند الحاجة.\n"
+        "- اربط الحل بقوانين القدرات (كمي/لفظي) باقتضاب.\n"
+        "- تجنّب الحشو واذكر القاعدة بالضبط.\n"
+        f"- {encouragement}"
     )
 
 # ================= لوق =================
@@ -177,17 +192,13 @@ def _build_four_options(correct: str, wrong_candidates: List[str]) -> Tuple[List
     opts = [correct]
     for w in wrong_candidates:
         if w and w not in seen:
-            opts.append(w)
-            seen.add(w)
-        if len(opts) == 4:
-            break
+            opts.append(w); seen.add(w)
+        if len(opts) == 4: break
     fillers = ["قديم", "حديث", "سريع", "بطيء", "واضح", "غامض", "قوي", "ضعيف", "قريب", "بعيد"]
     for w in fillers:
-        if len(opts) == 4:
-            break
+        if len(opts) == 4: break
         if w not in seen:
-            opts.append(w)
-            seen.add(w)
+            opts.append(w); seen.add(w)
     random.shuffle(opts)
     return opts, opts.index(correct)
 
@@ -240,16 +251,12 @@ def gen_verbal() -> Dict[str, Any]:
         return {"question": f"ضدّ «{a}» هو:", "options": opts, "answer_index": idx, "explain": f"ضدّ «{a}» = «{b}»."}
     if kind == "analogy":
         if random.random() < 0.5:
-            a, b = random.choice(SYN)
-            c, d = random.choice(SYN)
-            q = f"{a} : {b} :: {c} : ؟"
-            target = d
+            a, b = random.choice(SYN); c, d = random.choice(SYN)
+            q = f"{a} : {b} :: {c} : ؟"; target = d
             pool = [x for _, x in SYN if x != d] + [x for _, x in ANT]
         else:
-            a, b = random.choice(ANT)
-            c, d = random.choice(ANT)
-            q = f"{a} : {b} :: {c} : ؟"
-            target = d
+            a, b = random.choice(ANT); c, d = random.choice(ANT)
+            q = f"{a} : {b} :: {c} : ؟"; target = d
             pool = [x for _, x in ANT if x != d] + [x for _, x in SYN]
         opts, idx = _build_four_options(target, pool)
         return {"question": q, "options": opts, "answer_index": idx, "explain": "حافظ على نوع العلاقة يمين التشبيه."}
@@ -263,23 +270,17 @@ AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")
 def gen_iq() -> Dict[str, Any]:
     k = random.choice(["arith_seq", "geom_seq", "alt_seq", "letter_seq", "squares", "fibo", "mix_ops"])
     if k == "arith_seq":
-        a = random.randint(1, 15)
-        d = random.randint(2, 9)
-        n = [a + i * d for i in range(5)]
-        ans = n[-1] + d
+        a = random.randint(1, 15); d = random.randint(2, 9)
+        n = [a + i * d for i in range(5)]; ans = n[-1] + d
         opts, idx = _choice4(ans, [ans + d, ans - d, ans + 2])
         return {"question": f"أكمل المتتالية: {', '.join(map(str, n))}, ؟", "options": opts, "answer_index": idx, "explain": f"فرق ثابت = {d}"}
     if k == "geom_seq":
-        a = random.randint(1, 6)
-        r = random.choice([2, 3, 4])
-        n = [a * (r ** i) for i in range(4)]
-        ans = n[-1] * r
+        a = random.randint(1, 6); r = random.choice([2, 3, 4])
+        n = [a * (r ** i) for i in range(4)]; ans = n[-1] * r
         opts, idx = _choice4(ans, [ans * r, ans // r if ans % r == 0 else ans - 1, ans + r])
         return {"question": f"أكمل: {', '.join(map(str, n))}, ؟", "options": opts, "answer_index": idx, "explain": f"متضاعف بنسبة {r}"}
     if k == "alt_seq":
-        a = random.randint(5, 20)
-        d1 = random.randint(2, 6)
-        d2 = random.randint(7, 12)
+        a = random.randint(5, 20); d1 = random.randint(2, 6); d2 = random.randint(7, 12)
         seq = [a, a + d1, a + d1 + d2, a + 2 * d1 + d2, a + 2 * d1 + 2 * d2]
         ans = a + 3 * d1 + 2 * d2
         opts, idx = _choice4(ans, [ans + d1, ans + d2, ans - 1])
@@ -288,34 +289,27 @@ def gen_iq() -> Dict[str, Any]:
         step = random.randint(1, 3)
         max_start = len(AR_LETTERS) - 1 - 5 * step
         if max_start < 0:
-            step = 1
-            max_start = len(AR_LETTERS) - 6
+            step = 1; max_start = len(AR_LETTERS) - 6
         start = random.randint(0, max_start)
         seq = [AR_LETTERS[start + i * step] for i in range(5)]
-        nxt_index = start + 5 * step
-        nxt = AR_LETTERS[nxt_index]
+        nxt_index = start + 5 * step; nxt = AR_LETTERS[nxt_index]
         candidates = [i for i in range(len(AR_LETTERS)) if i != nxt_index]
         wrong_idx = random.sample(candidates, 3)
-        opts = [nxt] + [AR_LETTERS[i] for i in wrong_idx]
-        random.shuffle(opts)
+        opts = [nxt] + [AR_LETTERS[i] for i in wrong_idx]; random.shuffle(opts)
         return {"question": f"أكمل: {'، '.join(seq)}, ؟", "options": opts, "answer_index": opts.index(nxt), "explain": f"زيادة ثابتة بالحروف بمقدار {step}."}
     if k == "squares":
-        s = random.randint(2, 6)
-        seq = [i * i for i in range(s, s + 4)]
+        s = random.randint(2, 6); seq = [i * i for i in range(s, s + 4)]
         ans = (s + 4) ** 2
         opts, idx = _choice4(ans, [ans + (2 * s + 1), ans - (2 * s + 1), ans + 4])
         return {"question": f"مربعات: {', '.join(map(str, seq))}, ؟", "options": opts, "answer_index": idx, "explain": "أنماط n²."}
     if k == "fibo":
         a, b = random.randint(1, 4), random.randint(1, 4)
         seq = [a, b]
-        for _ in range(3):
-            seq.append(seq[-1] + seq[-2])
+        for _ in range(3): seq.append(seq[-1] + seq[-2])
         ans = seq[-1] + seq[-2]
         opts, idx = _choice4(ans, [ans + seq[-3], ans - 1, ans + 2])
         return {"question": f"فيبوناتشي: {', '.join(map(str, seq))}, ؟", "options": opts, "answer_index": idx, "explain": "كل حد = مجموع السابقين."}
-    a = random.randint(2, 6)
-    b = random.choice([2, 3])
-    x = random.randint(2, 9)
+    a = random.randint(2, 6); b = random.choice([2, 3]); x = random.randint(2, 9)
     seq = [x, x + a, (x + a) * b, (x + a) * b + a, ((x + a) * b + a) * b]
     ans = seq[-1] + a
     opts, idx = _choice4(ans, [ans + a, ans * b, ans - 1])
@@ -387,12 +381,10 @@ async def send_next(update: Update, context: ContextTypes.DEFAULT_TYPE, cat: str
     s = session_get(context, cat)
     for _ in range(6):
         q = s.current()
-        if not q:
-            break
+        if not q: break
         fingerprint = q["question"]
         if not seen_has(context, cat, fingerprint):
-            seen_push(context, cat, fingerprint)
-            break
+            seen_push(context, cat, fingerprint); break
         s.items[s.idx] = s.gen()
     q = s.current()
     if not q:
@@ -410,32 +402,41 @@ async def send_next(update: Update, context: ContextTypes.DEFAULT_TYPE, cat: str
 #                     واجهة الاستخدام
 # ======================================================
 MAIN_BTNS = [
-    [KeyboardButton("جدول الضرب")],
+    [KeyboardButton("ترحيب"), KeyboardButton("إعدادات الذكاء")],
     [KeyboardButton("قدرات كمي (500 سؤال)")],
     [KeyboardButton("قدرات لفظي (500 سؤال)")],
     [KeyboardButton("أسئلة الذكاء (300 سؤال)")],
+    [KeyboardButton("جدول الضرب")],
+    [KeyboardButton("وضع اختبار سريع"), KeyboardButton("وضع شرح وتدريب")],
     [KeyboardButton("اسأل محمد مشرف")],
 ]
 MAIN_KB = ReplyKeyboardMarkup(MAIN_BTNS, resize_keyboard=True)
 
+async def send_welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.effective_message.reply_text(WELCOME_TEXT, reply_markup=MAIN_KB)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("مرحبًا! اختر من القائمة 👇", reply_markup=MAIN_KB)
+    await send_welcome(update, context)
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n"
-        "/ask_ai سؤالك  (أو اضغط زر: اسأل محمد مشرف)\n"
-        "/ai_prefs عرض إعدادات الذكاء\n/ai_model تغيير الموديل\n"
-        "/ai_temp تغيير الحرارة\n/ai_style تغيير الأسلوب\n/ai_diag فحص الذكاء\n"
-        "/ei_on تشغيل التعاطف\n/ei_off إيقاف التعاطف"
+        "/start أو /welcome — عرض الترحيب والقائمة\n"
+        "/quant — كمي\n/verbal — لفظي\n/iq — ذكاء\n/table — جدول ضرب\n"
+        "/ask_ai — سؤال حر (أو زر: اسأل محمد مشرف)\n\n"
+        "أوضاع جاهزة:\n"
+        "/mode_quick — وضع اختبار سريع (مختصر)\n"
+        "/mode_explain — وضع شرح وتدريب (تفصيلي)\n\n"
+        "تحكم الذكاء:\n"
+        "/ai_prefs — عرض الإعدادات\n/ai_model — تغيير الموديل\n"
+        "/ai_temp — تغيير الحرارة\n/ai_style — concise|detailed\n/ai_diag — فحص الاتصال\n"
+        "/ei_on — تشغيل التعاطف\n/ei_off — إيقاف التعاطف"
     )
 
 # ====== جدول الضرب ======
 def parse_mul_expr(s: str) -> Tuple[bool, int, int]:
     s = s.replace("×", "x").replace("X", "x").replace("*", "x")
     m = re.fullmatch(r"\s*(-?\d+)\s*x\s*(-?\d+)\s*", s)
-    if not m:
-        return False, 0, 0
+    if not m: return False, 0, 0
     return True, int(m.group(1)), int(m.group(2))
 
 def mult_table(n: int, upto: int = 12) -> str:
@@ -502,6 +503,21 @@ async def _ask_ai_core(update: Update, context: ContextTypes.DEFAULT_TYPE, q: Op
             hint = "تعذّر الاتصال بالخدمة."
         await update.message.reply_text(f"❌ خطأ في /ask_ai:\n{msg}\nالاقتراح: {hint}")
 
+# ====== مبدّل الأوضاع الجاهزة ======
+async def set_mode_quick(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    prefs = get_ai_prefs(context)
+    prefs["style"] = "concise"
+    prefs["temperature"] = 0.15
+    set_ei(context, False)
+    await update.effective_message.reply_text("⚡️ تم تفعيل «وضع اختبار سريع» — إجابات مختصرة.\n(الحرارة 0.15 • الأسلوب concise • التعاطف OFF)")
+
+async def set_mode_explain(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    prefs = get_ai_prefs(context)
+    prefs["style"] = "detailed"
+    prefs["temperature"] = 0.35
+    set_ei(context, True)
+    await update.effective_message.reply_text("📚 تم تفعيل «وضع شرح وتدريب» — خطوات وتشجيع.\n(الحرارة 0.35 • الأسلوب detailed • التعاطف ON)")
+
 # ====== موجّه النص ======
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
@@ -510,6 +526,18 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.pop("ai_wait", False) and not t.startswith("/"):
         await _ask_ai_core(update, context, t)
         return
+
+    if t == "ترحيب":
+        await send_welcome(update, context); return
+
+    if t == "إعدادات الذكاء":
+        await cmd_ai_prefs(update, context); return
+
+    if t == "وضع اختبار سريع":
+        await set_mode_quick(update, context); return
+
+    if t == "وضع شرح وتدريب":
+        await set_mode_explain(update, context); return
 
     if "جدول الضرب" in t:
         await update.message.reply_text("أرسل رقمًا (مثل 7) لجدول كامل، أو صيغة (7×7 / 7x7) لناتج فوري.")
@@ -585,8 +613,7 @@ async def cb_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     m = re.fullmatch(r"ans\|(\d+)", (query.data or ""))
-    if not m:
-        return
+    if not m: return
     choice = int(m.group(1))
 
     cat = context.user_data.get("last_cat")
@@ -600,8 +627,7 @@ async def cb_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     streak = context.user_data.get("streak", 0)
 
     if res["ok"]:
-        streak += 1
-        context.user_data["streak"] = streak
+        streak += 1; context.user_data["streak"] = streak
         msg = f"✔️ صحيح! ({s.correct}/{s.total})"
         if get_ei(context):
             msg += "\n" + ei_msg_correct(streak)
@@ -638,7 +664,7 @@ async def cmd_ai_style(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_ai_temp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = (update.message.text or "").split()
     if len(args) < 2:
-        await update.message.reply_text("استخدم: /ai_temp 0.2 إلى 1.5")
+        await update.message.reply_text("استخدم: /ai_temp 0.0 إلى 1.5")
         return
     try:
         t = float(args[1])
@@ -708,16 +734,25 @@ async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE):
 # ================= تشغيل (Webhook فقط) =================
 def build() -> Application:
     app = Application.builder().token(BOT_TOKEN).build()
+    # ترحيب
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("welcome", start))
+    # مساعدة
     app.add_handler(CommandHandler("help", help_cmd))
+    # أوضاع جاهزة
+    app.add_handler(CommandHandler("mode_quick", set_mode_quick))
+    app.add_handler(CommandHandler("mode_explain", set_mode_explain))
+    # اختبارات
     app.add_handler(CommandHandler("quant", cmd_quant))
     app.add_handler(CommandHandler("verbal", cmd_verbal))
     app.add_handler(CommandHandler("iq", cmd_iq))
     app.add_handler(CommandHandler("table", lambda u, c: u.message.reply_text("أرسل رقمًا (7) لجدول، أو 7×9 للحساب الفوري")))
+    # تحكّم EI
     app.add_handler(CommandHandler("ei_on", cmd_ei_on))
     app.add_handler(CommandHandler("ei_off", cmd_ei_off))
+    # سؤال حر
     app.add_handler(CommandHandler("ask_ai", ask_ai))
-    # أوامر تحكم وتشخيص AI
+    # تحكم وتشخيص AI
     app.add_handler(CommandHandler("ai_style", cmd_ai_style))
     app.add_handler(CommandHandler("ai_temp", cmd_ai_temp))
     app.add_handler(CommandHandler("ai_model", cmd_ai_model))
