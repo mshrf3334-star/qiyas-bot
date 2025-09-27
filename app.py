@@ -1,30 +1,63 @@
-# app.py — Qiyas Bot (Webhook / PTB v21) — يدعم سؤال الذكاء مباشرة
-import os, logging, random, re
+# app.py — Qiyas Bot (Webhook/PTB v21) — بدون ملفات data
+# -------------------------------------------------------
+import os, logging, random, re, asyncio
 from typing import List, Dict, Any, Optional, Tuple
 
 from telegram import (
     Update, KeyboardButton, ReplyKeyboardMarkup,
     InlineKeyboardButton, InlineKeyboardMarkup
 )
+from telegram.constants import ChatAction
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, ContextTypes, filters
 )
 
-# ================== الإعدادات ==================
+# ================= إعدادات البيئة =================
 BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
 PORT        = int(os.environ.get("PORT", "10000"))
+AI_API_KEY  = os.environ.get("AI_API_KEY")
+AI_MODEL    = os.environ.get("AI_MODEL", "gpt-4o-mini")
 
 if not BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
 if not WEBHOOK_URL:
     raise RuntimeError("WEBHOOK_URL مفقود (مثال: https://your-app.onrender.com)")
 
-AI_API_KEY  = os.environ.get("AI_API_KEY")
-AI_MODEL    = os.environ.get("AI_MODEL", "gpt-4o-mini")
+# ===== إعدادات الذكاء الاصطناعي (قابلة للتعديل) =====
+AI_MAX_TOKENS          = int(os.environ.get("AI_MAX_TOKENS", "650"))
+AI_TEMPERATURE_DEFAULT = float(os.environ.get("AI_TEMPERATURE", "0.4"))
+AI_STYLE_DEFAULT       = os.environ.get("AI_STYLE", "concise")  # concise | detailed
 
-# ================== اللوق ==================
+def get_ai_prefs(context):
+    prefs = context.user_data.setdefault("ai_prefs", {})
+    if "model" not in prefs:
+        prefs["model"] = os.environ.get("AI_MODEL", AI_MODEL)
+    if "temperature" not in prefs:
+        prefs["temperature"] = AI_TEMPERATURE_DEFAULT
+    if "style" not in prefs:
+        prefs["style"] = AI_STYLE_DEFAULT
+    return prefs
+
+def ai_system_prompt(style:str, ei_enabled:bool) -> str:
+    tone = "لطيف ومطمئن" if ei_enabled else "حيادي ومباشر"
+    depth = "نقاط مختصرة مع خطوات مرقمة" if style=="concise" else "تفصيل واضح مع أمثلة قصيرة وخطوات دقيقة"
+    encouragement = (
+        "اختم بجملة تشجيعية قصيرة تضيف دافعية للطالب."
+        if ei_enabled else
+        "التزم بالإيجاز المهني دون تشجيع زائد."
+    )
+    return (
+        "أنت مدرّس قدرات (قياس) خبير بالعربية. "
+        f"اكتب بأسلوب {tone}. قدّم {depth}. "
+        "قسّم الإجابة إلى فقرات منظمة بعناوين قصيرة ونقاط. "
+        "اربط الخطوات بمفاهيم القدرات (كمي/لفظي) عند الحاجة. "
+        "تجنّب الحشو، واذكر القوانين الأساسية باقتضاب. "
+        f"{encouragement}"
+    )
+
+# ================= لوق =================
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
@@ -32,24 +65,56 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("qiyas-bot")
 
 # ======================================================
+#                 ذكاء عاطفي (مشجّع)
+# ======================================================
+EI_DEFAULT = True  # مفعّل افتراضياً
+
+def get_ei(context):
+    return context.user_data.get("ei", EI_DEFAULT)
+
+def set_ei(context, value: bool):
+    context.user_data["ei"] = bool(value)
+
+def ei_msg_correct(streak: int) -> str:
+    msgs = [
+        "👏 ممتاز! ثبّت هذا المستوى.",
+        "🔥 أداء جميل! استمر.",
+        "✅ إجابة موفقة — كفو.",
+        "🌟 أحسنت! تركيزك واضح."
+    ]
+    bonus = f"\nسلسلة صحيحة متتالية: {streak} ✔️" if streak >= 3 else ""
+    return random.choice(msgs) + bonus
+
+def ei_msg_wrong(explain: Optional[str]) -> str:
+    soft = [
+        "ولا يهمّك، جرّب اللي بعده بهدوء.",
+        "👍 خذها خطوة خطوة، تركيزك أهم.",
+        "💡 راجع الفكرة بهدوء وستتضح."
+    ]
+    tip = f"\nالشرح: {explain}" if explain else ""
+    return random.choice(soft) + tip
+
+# ======================================================
 #                 مولِّدات الأسئلة
 # ======================================================
 def _choice4(correct: int | str, near: List[int | str]) -> Tuple[List[str], int]:
-    opts = [str(correct)]
-    for x in near:
+    """يرجع 4 خيارات مع فهرس الصحيح، مع إزالة التكرارات دائماً."""
+    opts: List[str] = []
+    seen = set()
+    def push(x):
         sx = str(x)
-        if sx not in opts:
-            opts.append(sx)
-        if len(opts) == 4:
-            break
+        if sx not in seen and len(opts) < 4:
+            opts.append(sx); seen.add(sx)
+
+    push(correct)
+    for x in near: push(x)
     while len(opts) < 4:
         v = random.randint(-50, 200)
-        sv = str(v)
-        if sv not in opts:
-            opts.append(sv)
+        if str(v) not in seen: push(v)
     random.shuffle(opts)
     return opts, opts.index(str(correct))
 
+# ---- كمي ----
 def gen_quant() -> Dict[str, Any]:
     t = random.choice(["arith", "linear", "percent", "pow", "mix"])
     if t == "arith":
@@ -68,13 +133,14 @@ def gen_quant() -> Dict[str, Any]:
             val = a * b
             opts, ans = _choice4(val, [val+a, val-b, val+10])
             q = f"احسب: {a} × {b} = ؟"
-        else:
+        else:  # ÷
             b = random.randint(2, 12)
             val = random.randint(2, 12)
             a = b * val
             opts, ans = _choice4(val, [val+1, val-1, val+2])
             q = f"احسب: {a} ÷ {b} = ؟"
-        return {"question": q, "options": opts, "answer_index": ans, "explain": "عمليات حسابية أساسية."}
+        return {"question": q, "options": opts, "answer_index": ans,
+                "explain": "عمليات حسابية أساسية."}
 
     if t == "linear":
         a = random.randint(2, 9)
@@ -105,6 +171,7 @@ def gen_quant() -> Dict[str, Any]:
         return {"question": q, "options": opts, "answer_index": ans,
                 "explain": f"{base}^{exp} = {val}"}
 
+    # mix: مسافة = سرعة × زمن
     v = random.randint(30, 120)
     t = random.randint(1, 6)
     d = v * t
@@ -113,6 +180,7 @@ def gen_quant() -> Dict[str, Any]:
     return {"question": q, "options": opts, "answer_index": ans,
             "explain": "المسافة = السرعة × الزمن."}
 
+# ---- لفظي ----
 SYN = [
     ("يجابه","يواجه"), ("جلّي","واضح"), ("ينأى","يبتعد"),
     ("يبتكر","يبدع"), ("محنة","ابتلاء"), ("ساطع","لامع"),
@@ -126,7 +194,6 @@ COMP_SENT = [
     ("كان القرار ____ بعد دراسة مستفيضة.", "صائب",  ["صائب","عشوائي","مُلتبس","متسرّع"]),
     ("يجب _____ الوقت لتحقيق الأهداف.", "استثمار",["إهدار","تضييع","استثمار","تجميد"]),
 ]
-
 def gen_verbal() -> Dict[str, Any]:
     kind = random.choice(["syn","ant","analogy","cloze"])
     if kind == "syn":
@@ -157,14 +224,15 @@ def gen_verbal() -> Dict[str, Any]:
         random.shuffle(pool)
         return {"question": q, "options": pool,
                 "answer_index": pool.index(target),
-                "explain": "العلاقة نفسها تُحافَظ يمين التشبيه."}
+                "explain": "العلاقة نفسها تُحافَظ عليها يمين التشبيه."}
     s, correct, opts_full = random.choice(COMP_SENT)
     opts = opts_full[:]; random.shuffle(opts)
     return {"question": s, "options": opts,
             "answer_index": opts.index(correct),
             "explain": f"الكلمة الأنسب: «{correct}»."}
 
-AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")
+# ---- ذكاء ----
+AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")  # حروف عربية مبسّطة
 
 def gen_iq() -> Dict[str, Any]:
     k = random.choice(["arith_seq","geom_seq","alt_seq","letter_seq"])
@@ -187,12 +255,23 @@ def gen_iq() -> Dict[str, Any]:
         opts, idx = _choice4(ans, [ans+d1, ans+d2, ans-1])
         return {"question": f"نمط متناوب (+{d1}, +{d2}): {', '.join(map(str,seq))}, ؟",
                 "options": opts, "answer_index": idx, "explain": "يزيد مرّة d1 ثم d2 بالتناوب."}
+
+    # letter_seq — إصلاح IndexError: اختيار start آمن حسب step
     step = random.randint(1,3)
-    start = random.randint(0, len(AR_LETTERS)-6)
-    seq = [AR_LETTERS[start+i*step] for i in range(5)]
-    nxt = AR_LETTERS[start+5*step]
-    wrongs = [AR_LETTERS[(start+5*step+i)%len(AR_LETTERS)] for i in (1,2,3)]
-    opts = [nxt] + wrongs; random.shuffle(opts)
+    max_start = len(AR_LETTERS) - 1 - 5*step
+    if max_start < 0:
+        # احتياط نظري لو تقلصت القائمة
+        step = 1
+        max_start = len(AR_LETTERS) - 6
+    start = random.randint(0, max_start)
+    seq = [AR_LETTERS[start + i*step] for i in range(5)]
+    nxt_index = start + 5*step
+    nxt = AR_LETTERS[nxt_index]
+    # خيارات خاطئة مميزة (نختار 3 فهارس مختلفة غير الصحيحة)
+    candidates = [i for i in range(len(AR_LETTERS)) if i != nxt_index]
+    wrong_idx = random.sample(candidates, 3)
+    opts = [nxt] + [AR_LETTERS[i] for i in wrong_idx]
+    random.shuffle(opts)
     return {"question": f"أكمل: {'، '.join(seq)}, ؟",
             "options": opts, "answer_index": opts.index(nxt),
             "explain": f"زيادة ثابتة بالحروف بمقدار {step}."}
@@ -244,7 +323,8 @@ def session_get(context: ContextTypes.DEFAULT_TYPE, cat:str) -> QuizSession:
         return s
     limit = 500 if cat in ("quant","verbal") else 300
     gen = gen_quant if cat=="quant" else gen_verbal if cat=="verbal" else gen_iq
-    s = QuizSession(gen, limit); store[cat] = s
+    s = QuizSession(gen, limit)
+    store[cat] = s
     return s
 
 async def send_next(update:Update, context:ContextTypes.DEFAULT_TYPE, cat:str, label:str):
@@ -258,7 +338,7 @@ async def send_next(update:Update, context:ContextTypes.DEFAULT_TYPE, cat:str, l
         context.user_data["sessions"].pop(cat, None)
         return
     txt, kb = q_text(q, s.idx, s.total, label)
-    context.user_data["last_cat"] = cat
+    context.user_data["last_cat"] = cat  # لتمييز ردود الأزرار
     await update.effective_message.reply_text(txt, reply_markup=kb)
 
 # ======================================================
@@ -278,17 +358,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n/ask_ai سؤالك"
+        "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n"
+        "/ask_ai سؤالك\n/ai_prefs عرض إعدادات الذكاء\n/ai_model تغيير الموديل\n"
+        "/ai_temp تغيير الحرارة\n/ai_style تغيير الأسلوب\n/ei_on تشغيل التعاطف\n/ei_off إيقاف التعاطف"
     )
 
-def clean_num(text: str) -> Optional[int]:
-    if not text: return None
-    t = text.strip().lower().replace("×","x").replace("✕","x").replace("＊","*")
-    m = re.search(r"(-?\d+)\s*[x*]?\s*(-?\d+)?", t)
-    if m:
-        return int(m.group(1))
-    m2 = re.fullmatch(r"\s*(-?\d+)\s*", t)
-    return int(m2.group(1)) if m2 else None
+# ====== جدول الضرب ======
+def parse_mul_expr(s: str) -> Tuple[bool, int, int]:
+    s = s.replace("×","x").replace("X","x").replace("*","x")
+    m = re.fullmatch(r"\s*(-?\d+)\s*x\s*(-?\d+)\s*", s)
+    if not m:
+        return False, 0, 0
+    return True, int(m.group(1)), int(m.group(2))
 
 def mult_table(n:int, upto:int=12) -> str:
     rows = [f"📐 جدول ضرب {n}:"]
@@ -296,113 +377,214 @@ def mult_table(n:int, upto:int=12) -> str:
         rows.append(f"{n} × {i} = {n*i}")
     return "\n".join(rows)
 
-# ---------- ذكاء اصطناعي ----------
-async def _ai_answer(update: Update, q: str):
-    if not AI_API_KEY:
-        await update.effective_message.reply_text("لم يتم إعداد AI_API_KEY في Render.")
-        return
-    try:
-        from openai import OpenAI
-        client = OpenAI(api_key=AI_API_KEY)
-        resp = client.chat.completions.create(
-            model=AI_MODEL,
-            messages=[
-                {"role":"system","content":"أنت مدرّس قدرات خبير، اشرح بإيجاز ووضوح بالعربية."},
-                {"role":"user","content": q.strip()}
-            ],
-            temperature=0.4,
-        )
-        ans = (resp.choices[0].message.content or "").strip()
-        await update.effective_message.reply_text(ans or "لم أتلقَّ جوابًا.")
-    except Exception as e:
-        log.exception("AI error: %s", e)
-        await update.effective_message.reply_text("تعذّر الاتصال حاليًا. جرّب لاحقًا.")
+def clean_number_only(text: str) -> Optional[int]:
+    t = text.strip()
+    m = re.fullmatch(r"(-?\d+)", t)
+    return int(m.group(1)) if m else None
 
-async def ask_ai_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = (update.message.text or "")
-    if " " in txt:
-        q = txt.split(" ", 1)[1].strip()
-        if q:
-            await _ai_answer(update, q); return
-    # لو المستخدم كتب /ask_ai بدون سؤال
-    context.user_data["ai_wait"] = True
-    await update.message.reply_text("أرسل سؤالك الآن مباشرة…")
-
-# ---------- نصوص المستخدم ----------
+# ====== موجّه النص ======
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
 
-    # لو فعّلنا وضع انتظار سؤال الذكاء
-    if context.user_data.pop("ai_wait", False) and not t.startswith("/"):
-        await _ai_answer(update, t); return
-
-    # تحيّات بسيطة
-    if re.fullmatch(r"(مرحبا|مرحباً|اهلا|أهلاً|السلام عليكم|هاي)", t):
-        await update.message.reply_text("هلا فيك! اختر من القائمة أو اسألني مباشرة.", reply_markup=MAIN_KB)
-        return
-
     if "جدول الضرب" in t:
-        await update.message.reply_text("أرسل رقمًا (مثل 7) أو صيغة (7×7 / 7x7)."); return
+        await update.message.reply_text("أرسل رقمًا (مثل 7) لجدول كامل، أو صيغة (7×7 / 7x7) لناتج فوري."); return
     if "كمي" in t:
         context.user_data.get("sessions", {}).pop("quant", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الكمي (حتى ٥٠٠). بالتوفيق! 💪")
         await send_next(update, context, "quant", "قدرات كمي"); return
     if "لفظي" in t:
         context.user_data.get("sessions", {}).pop("verbal", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار اللفظي (حتى ٥٠٠). ركّز 👀")
         await send_next(update, context, "verbal", "قدرات لفظي"); return
     if "الذكاء" in t:
         context.user_data.get("sessions", {}).pop("iq", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الذكاء (حتى ٣٠٠).")
         await send_next(update, context, "iq", "أسئلة الذكاء"); return
     if "اسأل قياس" in t:
-        context.user_data["ai_wait"] = True
-        await update.message.reply_text("اكتب سؤالك الآن مباشرة بدون أوامر…"); return
+        await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أستعد لاختبار القدرات؟"); return
 
-    n = clean_num(t)
+    # تعبير ضرب مباشر
+    ok, a, b = parse_mul_expr(t)
+    if ok:
+        await update.message.reply_text(f"{a} × {b} = {a*b}"); return
+
+    # رقم فقط → جدول كامل
+    n = clean_number_only(t)
     if n is not None:
         await update.message.reply_text(mult_table(n)); return
 
     await update.message.reply_text("اختر من القائمة أو /help", reply_markup=MAIN_KB)
 
-# ---------- أوامر مختصرة ----------
+# ====== أوامر مختصرة ======
 async def cmd_quant(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("quant", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "quant", "قدرات كمي")
 
 async def cmd_verbal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("verbal", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "verbal", "قدرات لفظي")
 
 async def cmd_iq(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("iq", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "iq", "أسئلة الذكاء")
 
-# ---------- كولباك الإجابة ----------
+async def cmd_ei_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    set_ei(context, True)
+    await update.message.reply_text("تم تفعيل الذكاء العاطفي ✅")
+
+async def cmd_ei_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    set_ei(context, False)
+    await update.message.reply_text("تم إيقاف الذكاء العاطفي ⛔️")
+
+# ====== استلام الإجابة من الأزرار ======
 async def cb_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    data = query.data or ""
-    m = re.fullmatch(r"ans\|(\d+)", data)
-    if not m:
-        return
+    m = re.fullmatch(r"ans\|(\d+)", (query.data or ""))
+    if not m: return
     choice = int(m.group(1))
+
     cat = context.user_data.get("last_cat")
     if cat not in ("quant","verbal","iq"):
         await query.edit_message_text("انتهت الجلسة. ابدأ من جديد /start"); return
+
     s = session_get(context, cat)
     res = s.check(choice)
     right_letter = ["أ","ب","ج","د","هـ","و","ز","ح"][res["answer_index"]]
+    streak = context.user_data.get("streak", 0)
+
     if res["ok"]:
+        streak += 1
+        context.user_data["streak"] = streak
         msg = f"✔️ صحيح! ({s.correct}/{s.total})"
+        if get_ei(context):
+            msg += "\n" + ei_msg_correct(streak)
     else:
-        explain = f"\nالشرح: {res.get('explain')}" if res.get("explain") else ""
-        msg = f"❌ خطأ.\nالإجابة الصحيحة: {right_letter}{explain}"
+        context.user_data["streak"] = 0
+        msg = f"❌ خطأ.\nالإجابة الصحيحة: {right_letter}"
+        if get_ei(context):
+            msg += "\n" + ei_msg_wrong(res.get("explain"))
+
     await query.edit_message_text(msg)
     label = "قدرات كمي" if cat=="quant" else "قدرات لفظي" if cat=="verbal" else "أسئلة الذكاء"
     await send_next(update, context, cat, label)
 
-# ================== التشغيل (Webhook) ==================
+# ====== ذكاء اصطناعي ======
+async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    txt = (update.message.text or "")
+    q = None
+    if txt.startswith("/ask_ai") and " " in txt:
+        q = txt.split(" ", 1)[1].strip()
+    elif update.message and update.message.reply_to_message:
+        q = (update.message.reply_to_message.text or "").strip()
+
+    if not q:
+        await update.message.reply_text(
+            "اكتب سؤالك بعد الأمر:\n"
+            "/ask_ai كيف أذاكر القدرات؟\n"
+            "أو ردّ بالأمر على رسالة تحتوي السؤال."
+        )
+        return
+    if not AI_API_KEY:
+        await update.message.reply_text("⚠️ لم يتم ضبط AI_API_KEY في الخادم (Render).")
+        return
+
+    prefs = get_ai_prefs(context)
+    ei_enabled = get_ei(context)
+    system_msg = ai_system_prompt(prefs["style"], ei_enabled)
+
+    try:
+        await update.effective_chat.send_action(ChatAction.TYPING)
+        from openai import OpenAI
+        client = OpenAI(api_key=AI_API_KEY)
+
+        def _call():
+            return client.chat.completions.create(
+                model=prefs["model"],
+                temperature=prefs["temperature"],
+                max_tokens=AI_MAX_TOKENS,
+                messages=[
+                    {"role":"system","content": system_msg},
+                    {"role":"user","content": q}
+                ],
+            )
+
+        resp = await asyncio.wait_for(asyncio.to_thread(_call), timeout=25)
+        answer = (resp.choices[0].message.content or "").strip() or "لم أستطع توليد إجابة الآن."
+        for i in range(0, len(answer), 4000):
+            await update.message.reply_text(answer[i:i+4000])
+
+    except asyncio.TimeoutError:
+        await update.message.reply_text("⏱️ انتهت المهلة. جرّب سؤالاً أقصر أو أعد المحاولة.")
+    except Exception as e:
+        msg = str(e)
+        if "401" in msg or "Unauthorized" in msg or "Incorrect API key" in msg:
+            hint = "تحقّق من AI_API_KEY (يبدأ بـ sk-)."
+        elif "model" in msg and ("not found" in msg or "does not exist" in msg):
+            hint = f"اسم الموديل غير صحيح. الحالي: {prefs['model']}"
+        elif "429" in msg or "rate limit" in msg:
+            hint = "تجاوزت حد الاستخدام. انتظر قليلاً ثم أعد المحاولة."
+        else:
+            hint = "تعذّر الاتصال بالخدمة."
+        await update.message.reply_text(f"❌ خطأ في /ask_ai:\n{msg}\nالاقتراح: {hint}")
+
+# ====== أوامر تحكم بالذكاء ======
+async def cmd_ai_style(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = (update.message.text or "").split()
+    if len(args) < 2 or args[1] not in ("concise","detailed"):
+        await update.message.reply_text("استخدم: /ai_style concise أو /ai_style detailed"); return
+    prefs = get_ai_prefs(context)
+    prefs["style"] = args[1]
+    await update.message.reply_text(f"تم ضبط أسلوب الإجابة على: {args[1]}")
+
+async def cmd_ai_temp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = (update.message.text or "").split()
+    if len(args) < 2:
+        await update.message.reply_text("استخدم: /ai_temp 0.2 إلى 1.5"); return
+    try:
+        t = float(args[1]); 
+        if not (0.0 <= t <= 1.5): raise ValueError()
+    except:
+        await update.message.reply_text("قيمة غير صالحة. اختر رقمًا بين 0.0 و 1.5"); return
+    prefs = get_ai_prefs(context)
+    prefs["temperature"] = t
+    await update.message.reply_text(f"تم ضبط الحرارة على: {t:g}")
+
+async def cmd_ai_model(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = (update.message.text or "").split(maxsplit=1)
+    if len(args) < 2:
+        await update.message.reply_text("استخدم: /ai_model اسم_الموديل (مثال: gpt-4o-mini)"); return
+    prefs = get_ai_prefs(context)
+    prefs["model"] = args[1].strip()
+    await update.message.reply_text(f"تم ضبط الموديل على: {prefs['model']}")
+
+async def cmd_ai_prefs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    prefs = get_ai_prefs(context)
+    await update.message.reply_text(
+        "إعدادات الذكاء الاصطناعي الحالية:\n"
+        f"- الموديل: {prefs['model']}\n"
+        f"- الحرارة: {prefs['temperature']}\n"
+        f"- الأسلوب: {prefs['style']} (concise|detailed)\n"
+        f"- الذكاء العاطفي: {'مفعّل' if get_ei(context) else 'متوقف'}\n"
+        "يمكنك التعديل بالأوامر: /ai_model /ai_temp /ai_style /ei_on /ei_off"
+    )
+
+# ====== مُعالج أخطاء عام ======
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE):
+    log.exception("Exception in handler", exc_info=context.error)
+    try:
+        if isinstance(update, Update) and update.effective_message:
+            await update.effective_message.reply_text("⚠️ صار خطأ غير متوقّع وتم تسجيله. جرّب الأمر مرة أخرى.")
+    except Exception:
+        pass
+
+# ================= تشغيل (Webhook فقط) =================
 def build() -> Application:
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -410,11 +592,20 @@ def build() -> Application:
     app.add_handler(CommandHandler("quant", cmd_quant))
     app.add_handler(CommandHandler("verbal", cmd_verbal))
     app.add_handler(CommandHandler("iq", cmd_iq))
-    app.add_handler(CommandHandler("table", lambda u,c: u.message.reply_text("أرسل الرقم أو 7×7")))
-    app.add_handler(CommandHandler("ask_ai", ask_ai_cmd))
+    app.add_handler(CommandHandler("table", lambda u,c: u.message.reply_text("أرسل رقمًا (7) لجدول، أو 7×9 للحساب الفوري")))
+    app.add_handler(CommandHandler("ei_on", cmd_ei_on))
+    app.add_handler(CommandHandler("ei_off", cmd_ei_off))
+    app.add_handler(CommandHandler("ask_ai", ask_ai))
+
+    # أوامر التحكم بالذكاء
+    app.add_handler(CommandHandler("ai_style", cmd_ai_style))
+    app.add_handler(CommandHandler("ai_temp",  cmd_ai_temp))
+    app.add_handler(CommandHandler("ai_model", cmd_ai_model))
+    app.add_handler(CommandHandler("ai_prefs", cmd_ai_prefs))
 
     app.add_handler(CallbackQueryHandler(cb_answer, pattern=r"^ans\|"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_error_handler(on_error)
     return app
 
 def main():
