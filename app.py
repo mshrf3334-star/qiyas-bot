@@ -15,14 +15,14 @@ from telegram.ext import (
 )
 
 # ================= إعدادات البيئة =================
-BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
+BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
 PORT        = int(os.environ.get("PORT", "10000"))
 
 # ذكاء اصطناعي
 AI_API_KEY   = os.environ.get("AI_API_KEY")
 AI_MODEL     = os.environ.get("AI_MODEL", "gpt-4o-mini")
-AI_BASE_URL  = os.environ.get("AI_BASE_URL")  # اختياري (OpenRouter وغيرها)
+AI_BASE_URL  = os.environ.get("AI_BASE_URL")  # اختياري (OpenAI/OpenRouter…)
 
 if not BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
@@ -34,30 +34,27 @@ AI_MAX_TOKENS          = int(os.environ.get("AI_MAX_TOKENS", "650"))
 AI_TEMPERATURE_DEFAULT = float(os.environ.get("AI_TEMPERATURE", "0.4"))
 AI_STYLE_DEFAULT       = os.environ.get("AI_STYLE", "concise")  # concise | detailed
 
-# ===== نص الترحيب =====
+# ===== ترحيب ثابت (بدون أسماء شخصية) =====
 WELCOME_TEXT = (
-    "🎯 أهلاً يا محمد! هذا بوت «قياس» من إعداد أبوك أبو محمد ❤️\n"
-    "• اختر من القائمة بالأسفل لتبدأ التدريب.\n"
+    "🎯 أهلاً بك! هذا بوت «قياس» للتدريب على اختبار القدرات.\n"
+    "• اختر من القائمة بالأسفل للبدء.\n"
     "• عندك وضعان جاهزان:\n"
     "   - وضع اختبار سريع: إجابات مختصرة وسريعة.\n"
     "   - وضع شرح وتدريب: خطوات مرتبة وتشجيع.\n"
-    "• تقدر تسأل سؤال حر من زر «اسأل محمد مشرف» أو بأمر /ask_ai\n\n"
+    "• تقدر تسأل سؤالاً حرّاً من زر «اسأل محمد مشرف» أو بأمر /ask_ai\n\n"
     "أوامر مهمة: /help | /ai_prefs | /mode_quick | /mode_explain"
 )
 
 def get_ai_prefs(context):
     prefs = context.user_data.setdefault("ai_prefs", {})
-    prefs.setdefault("model", os.environ.get("AI_MODEL", AI_MODEL))
+    prefs.setdefault("model", AI_MODEL)
     prefs.setdefault("temperature", AI_TEMPERATURE_DEFAULT)
     prefs.setdefault("style", AI_STYLE_DEFAULT)  # concise/detailed
     return prefs
 
 def ai_system_prompt(style: str, ei_enabled: bool) -> str:
     tone = "لطيف ومطمئن" if ei_enabled else "حيادي ومباشر"
-    if style == "concise":
-        depth = "جواب سطر واحد نهائي + تلميح قصير فقط"
-    else:
-        depth = "تفصيل واضح بخطوات مرقمة وأمثلة قصيرة"
+    depth = "جواب سطر واحد نهائي + تلميح قصير فقط" if style == "concise" else "تفصيل واضح بخطوات مرقمة وأمثلة قصيرة"
     encouragement = "اختم بجملة تشجيعية قصيرة." if ei_enabled else "التزم بالإيجاز المهني."
     return (
         "أنت مدرّس قدرات (قياس) خبير بالعربية.\n"
@@ -65,7 +62,7 @@ def ai_system_prompt(style: str, ei_enabled: bool) -> str:
         f"- قدّم {depth}.\n"
         "- قسّم الإجابة إلى نقاط قصيرة وعناوين عند الحاجة.\n"
         "- اربط الحل بقوانين القدرات (كمي/لفظي) باقتضاب.\n"
-        "- تجنّب الحشو واذكر القاعدة بالضبط.\n"
+        "- تجنّب الحشو واذكر القاعدة بدقة.\n"
         f"- {encouragement}"
     )
 
@@ -115,14 +112,11 @@ def _choice4(correct: int | str, near: List[int | str]) -> Tuple[List[str], int]
     def push(x):
         sx = str(x)
         if sx not in seen and len(opts) < 4:
-            opts.append(sx)
-            seen.add(sx)
+            opts.append(sx); seen.add(sx)
     push(correct)
-    for x in near:
-        push(x)
+    for x in near: push(x)
     while len(opts) < 4:
-        v = random.randint(-50, 200)
-        push(v)
+        v = random.randint(-50, 200); push(v)
     random.shuffle(opts)
     return opts, opts.index(str(correct))
 
@@ -133,63 +127,50 @@ def gen_quant() -> Dict[str, Any]:
         a, b = random.randint(-20, 90), random.randint(-20, 90)
         op = random.choice(["+", "-", "×", "÷"])
         if op == "+":
-            val = a + b
-            opts, ans = _choice4(val, [val + random.choice([-3, -2, -1, 1, 2, 3]), val + 10, val - 10])
+            val = a + b; opts, ans = _choice4(val, [val + random.choice([-3, -2, -1, 1, 2, 3]), val + 10, val - 10])
             q = f"احسب: {a} + {b} = ؟"
         elif op == "-":
-            val = a - b
-            opts, ans = _choice4(val, [val + random.choice([-3, -1, 1, 3]), val + 7, val - 7])
+            val = a - b; opts, ans = _choice4(val, [val + random.choice([-3, -1, 1, 3]), val + 7, val - 7])
             q = f"احسب: {a} - {b} = ؟"
         elif op == "×":
             a, b = random.randint(2, 20), random.randint(2, 15)
-            val = a * b
-            opts, ans = _choice4(val, [val + a, val - b, val + 10])
+            val = a * b; opts, ans = _choice4(val, [val + a, val - b, val + 10])
             q = f"احسب: {a} × {b} = ؟"
         else:
-            b = random.randint(2, 12)
-            val = random.randint(2, 12)
-            a = b * val
+            b = random.randint(2, 12); val = random.randint(2, 12); a = b * val
             opts, ans = _choice4(val, [val + 1, val - 1, val + 2])
             q = f"احسب: {a} ÷ {b} = ؟"
         return {"question": q, "options": opts, "answer_index": ans, "explain": "عمليات حسابية أساسية."}
 
     if t == "linear":
-        a = random.randint(2, 9)
-        x = random.randint(-10, 12)
-        b = random.randint(-10, 12)
+        a = random.randint(2, 9); x = random.randint(-10, 12); b = random.randint(-10, 12)
         c = a * x + b
         q = f"إذا كان {a}س + {b} = {c}، فما قيمة س؟"
         opts, ans = _choice4(x, [x + 1, x - 1, x + 2])
         return {"question": q, "options": opts, "answer_index": ans, "explain": f"س = ( {c} - {b} ) ÷ {a} = {x}"}
 
     if t == "percent":
-        y = random.randint(20, 200)
-        x = random.choice([5, 10, 12, 15, 20, 25, 30, 40, 50])
+        y = random.randint(20, 200); x = random.choice([5, 10, 12, 15, 20, 25, 30, 40, 50])
         val = round(y * x / 100)
         q = f"ما {x}% من {y} ؟"
         opts, ans = _choice4(val, [val + 5, val - 5, val + 10])
         return {"question": q, "options": opts, "answer_index": ans, "explain": f"{x}% × {y} = {y * x / 100:g}"}
 
     if t == "pow":
-        base = random.randint(2, 15)
-        exp = random.choice([2, 3])
-        val = base ** exp
+        base = random.randint(2, 15); exp = random.choice([2, 3]); val = base ** exp
         q = f"قيمة {base}^{exp} = ؟"
         near = [val + base, val - base, val + 2]
         opts, ans = _choice4(val, near)
         return {"question": q, "options": opts, "answer_index": ans, "explain": f"{base}^{exp} = {val}"}
 
-    v = random.randint(30, 120)
-    t = random.randint(1, 6)
-    d = v * t
+    v = random.randint(30, 120); t = random.randint(1, 6); d = v * t
     q = f"سيارة سرعتها {v} كم/س، سارت {t} ساعات. ما المسافة؟"
     opts, ans = _choice4(d, [d - 10, d + 10, d + v])
     return {"question": q, "options": opts, "answer_index": ans, "explain": "المسافة = السرعة × الزمن."}
 
 # ---- أدوات اللفظي الآمنة ----
 def _build_four_options(correct: str, wrong_candidates: List[str]) -> Tuple[List[str], int]:
-    seen = set([correct])
-    opts = [correct]
+    seen = set([correct]); opts = [correct]
     for w in wrong_candidates:
         if w and w not in seen:
             opts.append(w); seen.add(w)
