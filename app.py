@@ -1,31 +1,31 @@
-# app.py — Qiyas Bot (بدون ملفات data) — Webhook/PTB v21
+# app.py — Qiyas Bot (Webhook/PTB v21) — بدون ملفات data
 # -------------------------------------------------------
-import os, logging, random, re, string
+import os, logging, random, re, asyncio
 from typing import List, Dict, Any, Optional, Tuple
 
 from telegram import (
     Update, KeyboardButton, ReplyKeyboardMarkup,
     InlineKeyboardButton, InlineKeyboardMarkup
 )
+from telegram.constants import ChatAction
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
     CallbackQueryHandler, ContextTypes, filters
 )
 
-# -------- الإعدادات من Environment --------
+# ================= إعدادات البيئة =================
 BOT_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = (os.environ.get("WEBHOOK_URL") or "").rstrip("/")
 PORT        = int(os.environ.get("PORT", "10000"))
+AI_API_KEY  = os.environ.get("AI_API_KEY")
+AI_MODEL    = os.environ.get("AI_MODEL", "gpt-4o-mini")
 
 if not BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
 if not WEBHOOK_URL:
     raise RuntimeError("WEBHOOK_URL مفقود (مثال: https://your-app.onrender.com)")
 
-AI_API_KEY  = os.environ.get("AI_API_KEY")
-AI_MODEL    = os.environ.get("AI_MODEL", "gpt-4o-mini")
-
-# -------- لوق --------
+# ================= لوق =================
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 )
@@ -33,11 +33,39 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("qiyas-bot")
 
 # ======================================================
+#                 ذكاء عاطفي (مشجّع)
+# ======================================================
+EI_DEFAULT = True  # مفعّل افتراضياً
+
+def get_ei(context): 
+    return context.user_data.get("ei", EI_DEFAULT)
+
+def set_ei(context, value: bool):
+    context.user_data["ei"] = bool(value)
+
+def ei_msg_correct(streak: int) -> str:
+    msgs = [
+        "👏 ممتاز! ثبّت هذا المستوى.",
+        "🔥 أداء جميل! استمر.",
+        "✅ إجابة موفقة — كفو.",
+        "🌟 أحسنت! تركيزك واضح."
+    ]
+    bonus = f"\nسلسلة صحيحة متتالية: {streak} ✔️" if streak >= 3 else ""
+    return random.choice(msgs) + bonus
+
+def ei_msg_wrong(explain: str | None) -> str:
+    soft = [
+        "ولا يهمّك، جرّب اللي بعده بهدوء.",
+        "👍 خذها خطوة خطوة، تركيزك أهم.",
+        "💡 راجع الفكرة بهدوء وستتضح."
+    ]
+    tip = f"\nالشرح: {explain}" if explain else ""
+    return random.choice(soft) + tip
+
+# ======================================================
 #                 مولِّدات الأسئلة
 # ======================================================
-
 def _choice4(correct: int | str, near: List[int | str]) -> Tuple[List[str], int]:
-    """يصنع 4 خيارات عشوائية ويعيد (options, answer_index)."""
     opts = [str(correct)]
     for x in near:
         sx = str(x)
@@ -53,7 +81,7 @@ def _choice4(correct: int | str, near: List[int | str]) -> Tuple[List[str], int]
     random.shuffle(opts)
     return opts, opts.index(str(correct))
 
-# ---- كمي (توليد لا نهائي تقريباً) ----
+# ---- كمي ----
 def gen_quant() -> Dict[str, Any]:
     t = random.choice(["arith", "linear", "percent", "pow", "mix"])
     if t == "arith":
@@ -119,7 +147,7 @@ def gen_quant() -> Dict[str, Any]:
     return {"question": q, "options": opts, "answer_index": ans,
             "explain": "المسافة = السرعة × الزمن."}
 
-# ---- لفظي (مرادفات/أضداد/تناظر/إكمال) ----
+# ---- لفظي ----
 SYN = [
     ("يجابه","يواجه"), ("جلّي","واضح"), ("ينأى","يبتعد"),
     ("يبتكر","يبدع"), ("محنة","ابتلاء"), ("ساطع","لامع"),
@@ -152,33 +180,26 @@ def gen_verbal() -> Dict[str, Any]:
         return {"question": f"ضدّ «{a}» هو:", "options": opts,
                 "answer_index": opts.index(b), "explain": f"ضدّ «{a}» = «{b}»."}
     if kind == "analogy":
-        # A:B :: C:?
         if random.random()<0.5:
-            a,b = random.choice(SYN)
-            c,d = random.choice(SYN)
-            q = f"{a} : {b} :: {c} : ؟"
-            target = d
+            a,b = random.choice(SYN); c,d = random.choice(SYN)
+            q = f"{a} : {b} :: {c} : ؟"; target = d
             pool = [d] + [x for _,x in SYN if x!=d][:3]
         else:
-            a,b = random.choice(ANT)
-            c,d = random.choice(ANT)
-            q = f"{a} : {b} :: {c} : ؟"
-            target = d
+            a,b = random.choice(ANT); c,d = random.choice(ANT)
+            q = f"{a} : {b} :: {c} : ؟"; target = d
             pool = [d] + [x for _,x in ANT if x!=d][:3]
         random.shuffle(pool)
         return {"question": q, "options": pool,
                 "answer_index": pool.index(target),
-                "explain": "العلاقة نفسها تُحافِظ عليها يمين التشبيه."}
-    # cloze
+                "explain": "العلاقة نفسها تُحافَظ عليها يمين التشبيه."}
     s, correct, opts_full = random.choice(COMP_SENT)
-    opts = opts_full[:]
-    random.shuffle(opts)
+    opts = opts_full[:]; random.shuffle(opts)
     return {"question": s, "options": opts,
             "answer_index": opts.index(correct),
             "explain": f"الكلمة الأنسب: «{correct}»."}
 
-# ---- ذكاء (متتاليات رقمية/حروف/نمط متناوب) ----
-AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")  # تبسيط
+# ---- ذكاء ----
+AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")  # مبسّط
 def gen_iq() -> Dict[str, Any]:
     k = random.choice(["arith_seq","geom_seq","alt_seq","letter_seq"])
     if k == "arith_seq":
@@ -200,14 +221,12 @@ def gen_iq() -> Dict[str, Any]:
         opts, idx = _choice4(ans, [ans+d1, ans+d2, ans-1])
         return {"question": f"نمط متناوب (+{d1}, +{d2}): {', '.join(map(str,seq))}, ؟",
                 "options": opts, "answer_index": idx, "explain": "يزيد مرّة d1 ثم d2 بالتناوب."}
-    # letter sequence
     step = random.randint(1,3)
     start = random.randint(0, len(AR_LETTERS)-6)
     seq = [AR_LETTERS[start+i*step] for i in range(5)]
     nxt = AR_LETTERS[start+5*step]
     wrongs = [AR_LETTERS[(start+5*step+i)%len(AR_LETTERS)] for i in (1,2,3)]
-    opts = [nxt] + wrongs
-    random.shuffle(opts)
+    opts = [nxt] + wrongs; random.shuffle(opts)
     return {"question": f"أكمل: {'، '.join(seq)}, ؟",
             "options": opts, "answer_index": opts.index(nxt),
             "explain": f"زيادة ثابتة بالحروف بمقدار {step}."}
@@ -274,8 +293,7 @@ async def send_next(update:Update, context:ContextTypes.DEFAULT_TYPE, cat:str, l
         context.user_data["sessions"].pop(cat, None)
         return
     txt, kb = q_text(q, s.idx, s.total, label)
-    # نوسم الرسالة بنوع الاختبار لتمييز الرد القادم
-    context.user_data["last_cat"] = cat
+    context.user_data["last_cat"] = cat  # لتمييز ردود الأزرار
     await update.effective_message.reply_text(txt, reply_markup=kb)
 
 # ======================================================
@@ -295,17 +313,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n/ask_ai سؤالك"
+        "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n/ask_ai سؤالك\n/ei_on تشغيل التعاطف\n/ei_off إيقاف التعاطف"
     )
 
-def clean_num(text: str) -> Optional[int]:
-    if not text: return None
-    t = text.strip().lower().replace("×","x").replace("✕","x").replace("＊","*")
-    m = re.search(r"(-?\d+)\s*[x*]?\s*(-?\d+)?", t)
-    if m:
-        return int(m.group(1))
-    m2 = re.fullmatch(r"\s*(-?\d+)\s*", t)
-    return int(m2.group(1)) if m2 else None
+# ====== جدول الضرب ======
+def parse_mul_expr(s: str) -> Tuple[bool, int, int]:
+    s = s.replace("×","x").replace("X","x").replace("*","x")
+    m = re.fullmatch(r"\s*(-?\d+)\s*x\s*(-?\d+)\s*", s)
+    if not m:
+        return False, 0, 0
+    return True, int(m.group(1)), int(m.group(2))
 
 def mult_table(n:int, upto:int=12) -> str:
     rows = [f"📐 جدول ضرب {n}:"]
@@ -313,98 +330,156 @@ def mult_table(n:int, upto:int=12) -> str:
         rows.append(f"{n} × {i} = {n*i}")
     return "\n".join(rows)
 
+def clean_number_only(text: str) -> Optional[int]:
+    t = text.strip()
+    m = re.fullmatch(r"(-?\d+)", t)
+    return int(m.group(1)) if m else None
+
+# ====== موجّه النص ======
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
     low = t.lower()
 
     if "جدول الضرب" in t:
-        await update.message.reply_text("أرسل رقمًا (مثل 7) أو صيغة (7×7 / 7x7)."); return
+        await update.message.reply_text("أرسل رقمًا (مثل 7) لجدول كامل، أو صيغة (7×7 / 7x7) لناتج فوري."); return
     if "كمي" in t:
         context.user_data.get("sessions", {}).pop("quant", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الكمي (حتى ٥٠٠). بالتوفيق! 💪")
         await send_next(update, context, "quant", "قدرات كمي"); return
     if "لفظي" in t:
         context.user_data.get("sessions", {}).pop("verbal", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار اللفظي (حتى ٥٠٠). ركّز 👀")
         await send_next(update, context, "verbal", "قدرات لفظي"); return
     if "الذكاء" in t:
         context.user_data.get("sessions", {}).pop("iq", None)
+        context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الذكاء (حتى ٣٠٠).")
         await send_next(update, context, "iq", "أسئلة الذكاء"); return
     if "اسأل قياس" in t:
         await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أستعد لاختبار القدرات؟"); return
 
-    n = clean_num(t)
+    # تعبير ضرب مباشر
+    ok, a, b = parse_mul_expr(t)
+    if ok:
+        await update.message.reply_text(f"{a} × {b} = {a*b}"); return
+
+    # رقم فقط → جدول كامل
+    n = clean_number_only(t)
     if n is not None:
         await update.message.reply_text(mult_table(n)); return
 
     await update.message.reply_text("اختر من القائمة أو /help", reply_markup=MAIN_KB)
 
-# أوامر مختصرة
+# ====== أوامر مختصرة ======
 async def cmd_quant(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("quant", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "quant", "قدرات كمي")
 
 async def cmd_verbal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("verbal", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "verbal", "قدرات لفظي")
 
 async def cmd_iq(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.get("sessions", {}).pop("iq", None)
+    context.user_data["streak"] = 0
     await send_next(update, context, "iq", "أسئلة الذكاء")
 
-# استلام الإجابة من الأزرار
+async def cmd_ei_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    set_ei(context, True)
+    await update.message.reply_text("تم تفعيل الذكاء العاطفي ✅")
+
+async def cmd_ei_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    set_ei(context, False)
+    await update.message.reply_text("تم إيقاف الذكاء العاطفي ⛔️")
+
+# ====== استلام الإجابة من الأزرار ======
 async def cb_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    data = query.data or ""
-    m = re.fullmatch(r"ans\|(\d+)", data)
-    if not m:
-        return
+    m = re.fullmatch(r"ans\|(\d+)", (query.data or ""))
+    if not m: return
     choice = int(m.group(1))
-    cat = context.user_data.get("last_cat")  # تم ضبطها عند إرسال السؤال
+
+    cat = context.user_data.get("last_cat")
     if cat not in ("quant","verbal","iq"):
-        await query.edit_message_text("انتهت الجلسة. ابدأ من جديد /start")
-        return
+        await query.edit_message_text("انتهت الجلسة. ابدأ من جديد /start"); return
+
     s = session_get(context, cat)
     res = s.check(choice)
     right_letter = ["أ","ب","ج","د","هـ","و","ز","ح"][res["answer_index"]]
+    streak = context.user_data.get("streak", 0)
+
     if res["ok"]:
+        streak += 1
+        context.user_data["streak"] = streak
         msg = f"✔️ صحيح! ({s.correct}/{s.total})"
+        if get_ei(context):
+            msg += "\n" + ei_msg_correct(streak)
     else:
-        explain = f"\nالشرح: {res.get('explain')}" if res.get("explain") else ""
-        msg = f"❌ خطأ.\nالإجابة الصحيحة: {right_letter}{explain}"
+        context.user_data["streak"] = 0
+        msg = f"❌ خطأ.\nالإجابة الصحيحة: {right_letter}"
+        if get_ei(context):
+            msg += "\n" + ei_msg_wrong(res.get("explain"))
+
     await query.edit_message_text(msg)
-    # أرسل التالي
     label = "قدرات كمي" if cat=="quant" else "قدرات لفظي" if cat=="verbal" else "أسئلة الذكاء"
     await send_next(update, context, cat, label)
 
-# ذكاء اصطناعي (اختياري)
+# ====== ذكاء اصطناعي ======
 async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = (update.message.text or "")
-    q = txt.split(" ", 1)[1].strip() if txt.startswith("/ask_ai") and " " in txt else None
+    q = None
+    if txt.startswith("/ask_ai") and " " in txt:
+        q = txt.split(" ", 1)[1].strip()
+    elif update.message and update.message.reply_to_message:
+        q = (update.message.reply_to_message.text or "").strip()
+
     if not q:
-        await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أذاكر القدرات؟")
+        await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أذاكر القدرات؟\nأو ردّ بالأمر على رسالة فيها السؤال.")
         return
     if not AI_API_KEY:
-        await update.message.reply_text("لم يتم إعداد AI_API_KEY. أضِفه في Render.")
+        await update.message.reply_text("⚠️ لم يتم ضبط AI_API_KEY في الخادم (Render).")
         return
+
     try:
+        await update.effective_chat.send_action(ChatAction.TYPING)
         from openai import OpenAI
         client = OpenAI(api_key=AI_API_KEY)
-        resp = client.chat.completions.create(
-            model=AI_MODEL,
-            messages=[{"role":"system","content":"أنت مدرّس قدرات خبير."},
-                      {"role":"user","content": q}],
-            temperature=0.4,
-        )
-        ans = resp.choices[0].message.content.strip()
-        await update.message.reply_text(ans)
-    except Exception as e:
-        log.exception("AI error: %s", e)
-        await update.message.reply_text("تعذّر الاتصال حالياً.")
 
-# -------- تشغيل (Webhook فقط) --------
+        def _call():
+            return client.chat.completions.create(
+                model=AI_MODEL,
+                temperature=0.4,
+                messages=[
+                    {"role":"system","content":"أنت مدرّس قدرات خبير ومشجّع. أجب بالعربية بوضوح وخطوات مختصرة، وقدّم تطمينًا لطيفًا للطالب."},
+                    {"role":"user","content": q}
+                ],
+            )
+
+        resp = await asyncio.wait_for(asyncio.to_thread(_call), timeout=25)
+        answer = (resp.choices[0].message.content or "").strip() or "لم أستطع توليد إجابة الآن."
+        for i in range(0, len(answer), 4000):
+            await update.message.reply_text(answer[i:i+4000])
+
+    except asyncio.TimeoutError:
+        await update.message.reply_text("⏱️ انتهت المهلة. جرّب سؤالاً أقصر أو أعد المحاولة.")
+    except Exception as e:
+        msg = str(e)
+        if "401" in msg or "Unauthorized" in msg or "Incorrect API key" in msg:
+            hint = "تحقّق من AI_API_KEY (يبدأ بـ sk-)."
+        elif "model" in msg and ("not found" in msg or "does not exist" in msg):
+            hint = f"اسم الموديل غير صحيح. جرّب: {AI_MODEL}"
+        elif "429" in msg or "rate limit" in msg:
+            hint = "تجاوزت حد الاستخدام. انتظر قليلاً ثم أعد المحاولة."
+        else:
+            hint = "تعذّر الاتصال بالخدمة."
+        await update.message.reply_text(f"❌ خطأ في /ask_ai:\n{msg}\nالاقتراح: {hint}")
+
+# ================= تشغيل (Webhook فقط) =================
 def build() -> Application:
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -412,7 +487,9 @@ def build() -> Application:
     app.add_handler(CommandHandler("quant", cmd_quant))
     app.add_handler(CommandHandler("verbal", cmd_verbal))
     app.add_handler(CommandHandler("iq", cmd_iq))
-    app.add_handler(CommandHandler("table", lambda u,c: u.message.reply_text("أرسل الرقم أو 7×7")))
+    app.add_handler(CommandHandler("table", lambda u,c: u.message.reply_text("أرسل رقمًا (7) لجدول، أو 7×9 للحساب الفوري")))
+    app.add_handler(CommandHandler("ei_on", cmd_ei_on))
+    app.add_handler(CommandHandler("ei_off", cmd_ei_off))
     app.add_handler(CommandHandler("ask_ai", ask_ai))
 
     app.add_handler(CallbackQueryHandler(cb_answer, pattern=r"^ans\|"))
