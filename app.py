@@ -451,6 +451,17 @@ def clean_number_only(text: str) -> Optional[int]:
 # ====== موجّه النص ======
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
+
+    # ✅ وضع السؤال المباشر: إذا كان مفعّلًا، أرسل الرسالة القادمة إلى /ask_ai تلقائيًا
+    if context.user_data.pop("ai_wait", False) and not t.startswith("/"):
+        old = update.message.text
+        update.message.text = f"/ask_ai {t}"
+        try:
+            await ask_ai(update, context)
+        finally:
+            update.message.text = old
+        return
+
     if "جدول الضرب" in t:
         await update.message.reply_text("أرسل رقمًا (مثل 7) لجدول كامل، أو صيغة (7×7 / 7x7) لناتج فوري.")
         return
@@ -473,16 +484,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_next(update, context, "iq", "أسئلة الذكاء")
         return
     if "اسأل محمد مشرف" in t:
-        await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أستعد لاختبار القدرات؟")
+        context.user_data["ai_wait"] = True
+        await update.message.reply_text("✍️ اكتب سؤالك الآن مباشرة بدون أوامر.")
         return
+
     ok, a, b = parse_mul_expr(t)
     if ok:
         await update.message.reply_text(f"{a} × {b} = {a * b}")
         return
+
     n = clean_number_only(t)
     if n is not None:
         await update.message.reply_text(mult_table(n))
         return
+
     await update.message.reply_text("اختر من القائمة أو /help", reply_markup=MAIN_KB)
 
 # ====== أوامر مختصرة ======
