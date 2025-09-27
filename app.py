@@ -105,7 +105,6 @@ def _choice4(correct: int | str, near: List[int | str]) -> Tuple[List[str], int]
         sx = str(x)
         if sx not in seen and len(opts) < 4:
             opts.append(sx); seen.add(sx)
-
     push(correct)
     for x in near: push(x)
     while len(opts) < 4:
@@ -180,6 +179,23 @@ def gen_quant() -> Dict[str, Any]:
     return {"question": q, "options": opts, "answer_index": ans,
             "explain": "المسافة = السرعة × الزمن."}
 
+# ---- أدوات اللفظي الآمنة ----
+def _build_four_options(correct: str, wrong_candidates: List[str]) -> Tuple[List[str], int]:
+    """ينشئ 4 خيارات فريدة مع فهرس الصحيح."""
+    seen = set([correct])
+    opts = [correct]
+    for w in wrong_candidates:
+        if w and w not in seen:
+            opts.append(w); seen.add(w)
+        if len(opts) == 4: break
+    FILLER = ["قديم","حديث","سريع","بطيء","واضح","غامض","قوي","ضعيف","قريب","بعيد"]
+    for w in FILLER:
+        if len(opts) == 4: break
+        if w not in seen:
+            opts.append(w); seen.add(w)
+    random.shuffle(opts)
+    return opts, opts.index(correct)
+
 # ---- لفظي ----
 SYN = [
     ("يجابه","يواجه"), ("جلّي","واضح"), ("ينأى","يبتعد"),
@@ -194,45 +210,43 @@ COMP_SENT = [
     ("كان القرار ____ بعد دراسة مستفيضة.", "صائب",  ["صائب","عشوائي","مُلتبس","متسرّع"]),
     ("يجب _____ الوقت لتحقيق الأهداف.", "استثمار",["إهدار","تضييع","استثمار","تجميد"]),
 ]
+
 def gen_verbal() -> Dict[str, Any]:
     kind = random.choice(["syn","ant","analogy","cloze"])
     if kind == "syn":
         a,b = random.choice(SYN)
-        wrongs = [w for _,w in SYN if w!=b][:6] + [x for _,x in ANT][:6]
-        random.shuffle(wrongs)
-        opts = [b] + wrongs[:3]
-        random.shuffle(opts)
+        wrongs = [w for _,w in SYN if w!=b] + [x for _,x in ANT]
+        opts, idx = _build_four_options(b, wrongs)
         return {"question": f"مرادف «{a}» هو:", "options": opts,
-                "answer_index": opts.index(b), "explain": f"مرادف «{a}» = «{b}»."}
+                "answer_index": idx, "explain": f"مرادف «{a}» = «{b}»."}
+
     if kind == "ant":
         a,b = random.choice(ANT)
-        wrongs = [w for _,w in ANT if w!=b][:6] + [x for _,x in SYN][:6]
-        random.shuffle(wrongs)
-        opts = [b] + wrongs[:3]
-        random.shuffle(opts)
+        wrongs = [w for _,w in ANT if w!=b] + [x for _,x in SYN]
+        opts, idx = _build_four_options(b, wrongs)
         return {"question": f"ضدّ «{a}» هو:", "options": opts,
-                "answer_index": opts.index(b), "explain": f"ضدّ «{a}» = «{b}»."}
+                "answer_index": idx, "explain": f"ضدّ «{a}» = «{b}»."}
+
     if kind == "analogy":
         if random.random()<0.5:
             a,b = random.choice(SYN); c,d = random.choice(SYN)
             q = f"{a} : {b} :: {c} : ؟"; target = d
-            pool = [d] + [x for _,x in SYN if x!=d][:3]
+            pool = [x for _,x in SYN if x!=d] + [x for _,x in ANT]
         else:
             a,b = random.choice(ANT); c,d = random.choice(ANT)
             q = f"{a} : {b} :: {c} : ؟"; target = d
-            pool = [d] + [x for _,x in ANT if x!=d][:3]
-        random.shuffle(pool)
-        return {"question": q, "options": pool,
-                "answer_index": pool.index(target),
-                "explain": "العلاقة نفسها تُحافَظ عليها يمين التشبيه."}
+            pool = [x for _,x in ANT if x!=d] + [x for _,x in SYN]
+        opts, idx = _build_four_options(target, pool)
+        return {"question": q, "options": opts, "answer_index": idx,
+                "explain": "حافظ على نوع العلاقة يمين التشبيه."}
+
     s, correct, opts_full = random.choice(COMP_SENT)
-    opts = opts_full[:]; random.shuffle(opts)
-    return {"question": s, "options": opts,
-            "answer_index": opts.index(correct),
+    opts, idx = _build_four_options(correct, [o for o in opts_full if o!=correct])
+    return {"question": s, "options": opts, "answer_index": idx,
             "explain": f"الكلمة الأنسب: «{correct}»."}
 
 # ---- ذكاء ----
-AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")  # حروف عربية مبسّطة
+AR_LETTERS = list("ابتثجحخدذرزسشصضطظعغفقكلمنهوي")  # مبسّط
 
 def gen_iq() -> Dict[str, Any]:
     k = random.choice(["arith_seq","geom_seq","alt_seq","letter_seq"])
@@ -260,14 +274,12 @@ def gen_iq() -> Dict[str, Any]:
     step = random.randint(1,3)
     max_start = len(AR_LETTERS) - 1 - 5*step
     if max_start < 0:
-        # احتياط نظري لو تقلصت القائمة
         step = 1
         max_start = len(AR_LETTERS) - 6
     start = random.randint(0, max_start)
     seq = [AR_LETTERS[start + i*step] for i in range(5)]
     nxt_index = start + 5*step
     nxt = AR_LETTERS[nxt_index]
-    # خيارات خاطئة مميزة (نختار 3 فهارس مختلفة غير الصحيحة)
     candidates = [i for i in range(len(AR_LETTERS)) if i != nxt_index]
     wrong_idx = random.sample(candidates, 3)
     opts = [nxt] + [AR_LETTERS[i] for i in wrong_idx]
@@ -289,7 +301,32 @@ class QuizSession:
 
     def _ensure(self):
         while len(self.items) <= self.idx and len(self.items) < self.total:
-            self.items.append(self.gen())
+            try:
+                self.items.append(self.gen())
+            except Exception as e:
+                # حماية من أي تعثّر غير متوقّع في المولّد
+                log.exception("generator failed, falling back", exc_info=e)
+                if self.gen == gen_verbal:
+                    self.items.append({
+                        "question": "مرادف «سريع» هو:",
+                        "options": ["عاجل","بطيء","غامض","قديم"],
+                        "answer_index": 0,
+                        "explain": "مرادف سريع = عاجل."
+                    })
+                elif self.gen == gen_quant:
+                    self.items.append({
+                        "question": "احسب: 7 × 8 = ؟",
+                        "options": ["54","56","63","48"],
+                        "answer_index": 1,
+                        "explain": "7×8=56"
+                    })
+                else:  # gen_iq
+                    self.items.append({
+                        "question": "أكمل: 2، 4، 6، 8، ؟",
+                        "options": ["9","10","12","14"],
+                        "answer_index": 1,
+                        "explain": "فرق ثابت +2 → 10"
+                    })
 
     def current(self) -> Optional[Dict[str,Any]]:
         self._ensure()
