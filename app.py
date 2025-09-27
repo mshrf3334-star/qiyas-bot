@@ -22,7 +22,7 @@ PORT        = int(os.environ.get("PORT", "10000"))
 # ذكاء اصطناعي
 AI_API_KEY   = os.environ.get("AI_API_KEY")
 AI_MODEL     = os.environ.get("AI_MODEL", "gpt-4o-mini")
-AI_BASE_URL  = os.environ.get("AI_BASE_URL")  # اختياري (بوابات OpenRouter ونحوها)
+AI_BASE_URL  = os.environ.get("AI_BASE_URL")  # اختياري (OpenRouter وغيرها)
 
 if not BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN مفقود")
@@ -48,7 +48,7 @@ def ai_system_prompt(style: str, ei_enabled: bool) -> str:
     return (
         "أنت مدرّس قدرات (قياس) خبير بالعربية. "
         f"اكتب بأسلوب {tone}. قدّم {depth}. "
-        "قسّم الإجابة إلى فقرات بعنوانات قصيرة ونقاط. "
+        "قسّم الإجابة إلى فقرات بعناوين قصيرة ونقاط. "
         "اربط الخطوات بمفاهيم القدرات (كمي/لفظي) عند الحاجة. "
         "تجنّب الحشو، واذكر القوانين الأساسية باقتضاب. "
         f"{encouragement}"
@@ -65,9 +65,9 @@ log = logging.getLogger("qiyas-bot")
 #                 ذكاء عاطفي (مشجّع)
 # ======================================================
 EI_DEFAULT = True
-def get_ei(context): 
+def get_ei(context):
     return context.user_data.get("ei", EI_DEFAULT)
-def set_ei(context, value: bool): 
+def set_ei(context, value: bool):
     context.user_data["ei"] = bool(value)
 
 def ei_msg_correct(streak: int) -> str:
@@ -87,7 +87,6 @@ SEEN_LIMIT = 400
 def seen_push(context, cat: str, key: str):
     deq: deque = context.user_data.setdefault(f"seen_{cat}", deque(maxlen=SEEN_LIMIT))
     deq.append(key)
-
 def seen_has(context, cat: str, key: str) -> bool:
     deq: deque = context.user_data.setdefault(f"seen_{cat}", deque(maxlen=SEEN_LIMIT))
     return key in deq
@@ -337,8 +336,8 @@ class QuizSession:
         while len(self.items) <= self.idx and len(self.items) < self.total:
             try:
                 self.items.append(self.gen())
-            except Exception as e:
-                log.exception("generator failed, falling back", exc_info=e)
+            except Exception:
+                log.exception("generator failed, falling back")
                 self.items.append({
                     "question": "أكمل: 2، 4، 6، 8، ؟",
                     "options": ["9", "10", "12", "14"],
@@ -450,7 +449,7 @@ def clean_number_only(text: str) -> Optional[int]:
     m = re.fullmatch(r"(-?\d+)", t)
     return int(m.group(1)) if m else None
 
-# ====== ذكاء اصطناعي (لبّ التنفيذ) ======
+# ====== الذكاء الاصطناعي — اللب ======
 async def _ask_ai_core(update: Update, context: ContextTypes.DEFAULT_TYPE, q: Optional[str]):
     if not q:
         await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أذاكر القدرات؟")
@@ -507,7 +506,7 @@ async def _ask_ai_core(update: Update, context: ContextTypes.DEFAULT_TYPE, q: Op
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = (update.message.text or "").strip()
 
-    # ✅ وضع السؤال المباشر: أرسل الرسالة القادمة للذكاء مباشرة
+    # وضع السؤال المباشر (زر اسأل محمد مشرف)
     if context.user_data.pop("ai_wait", False) and not t.startswith("/"):
         await _ask_ai_core(update, context, t)
         return
@@ -530,7 +529,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_next(update, context, "verbal", "قدرات لفظي")
         return
 
-    if "الذكاء" في t or "ذكاء" in t:
+    if "الذكاء" in t:
         context.user_data.get("sessions", {}).pop("iq", None)
         context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الذكاء (حتى ٣٠٠).")
@@ -616,7 +615,7 @@ async def cb_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     label = "قدرات كمي" if cat == "quant" else "قدرات لفظي" if cat == "verbal" else "أسئلة الذكاء"
     await send_next(update, context, cat, label)
 
-# ====== ذكاء اصطناعي: أمر /ask_ai (غلاف يستدعي اللب) ======
+# ====== ذكاء اصطناعي: أمر /ask_ai ======
 async def ask_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = (update.message.text or "")
     q = None
@@ -724,8 +723,11 @@ def build() -> Application:
     app.add_handler(CommandHandler("ai_model", cmd_ai_model))
     app.add_handler(CommandHandler("ai_prefs", cmd_ai_prefs))
     app.add_handler(CommandHandler("ai_diag", cmd_ai_diag))
+    # أزرار الإجابات
     app.add_handler(CallbackQueryHandler(cb_answer, pattern=r"^ans\|"))
+    # رسائل نصية عامة
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    # لاقط أخطاء
     app.add_error_handler(on_error)
     return app
 
