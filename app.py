@@ -283,7 +283,7 @@ def gen_iq() -> Dict[str, Any]:
     if k == "squares":
         s = random.randint(2,6); seq = [i*i for i in range(s, s+4)]
         ans = (s+4)**2
-        opts, idx = _choice4(ans, [ans+(2*s+1), ans- (2*s+1), ans+4])
+        opts, idx = _choice4(ans, [ans+(2*s+1), ans-(2*s+1), ans+4])
         return {"question": f"مربعات: {', '.join(map(str,seq))}, ؟", "options": opts, "answer_index": idx, "explain": "أنماط n²."}
     if k == "fibo":
         a,b = random.randint(1,4), random.randint(1,4)
@@ -317,7 +317,6 @@ class QuizSession:
                 self.items.append(self.gen())
             except Exception as e:
                 log.exception("generator failed, falling back", exc_info=e)
-                # بدائل آمنة
                 self.items.append({
                     "question": "أكمل: 2، 4، 6، 8، ؟",
                     "options": ["9","10","12","14"],
@@ -369,7 +368,6 @@ async def send_next(update:Update, context:ContextTypes.DEFAULT_TYPE, cat:str, l
         if not seen_has(context, cat, fingerprint):
             seen_push(context, cat, fingerprint)
             break
-        # لو مكرر: أعِدّ التوليد في نفس الموضع
         s.items[s.idx] = s.gen()
     q = s.current()
     if not q:
@@ -390,7 +388,7 @@ MAIN_BTNS = [
     [KeyboardButton("قدرات كمي (500 سؤال)")],
     [KeyboardButton("قدرات لفظي (500 سؤال)")],
     [KeyboardButton("أسئلة الذكاء (300 سؤال)")],
-    [KeyboardButton("اسأل قياس (ذكاء اصطناعي)")],
+    [KeyboardButton("اسأل محمد مشرف")],  # ← تم التبديل هنا
 ]
 MAIN_KB = ReplyKeyboardMarkup(MAIN_BTNS, resize_keyboard=True)
 
@@ -400,7 +398,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "/start القائمة\n/quant كمي\n/verbal لفظي\n/iq ذكاء\n/table جدول ضرب\n"
-        "/ask_ai سؤالك\n/ai_prefs عرض إعدادات الذكاء\n/ai_model تغيير الموديل\n"
+        "/ask_ai سؤالك  (أو اضغط زر: اسأل محمد مشرف)\n"
+        "/ai_prefs عرض إعدادات الذكاء\n/ai_model تغيير الموديل\n"
         "/ai_temp تغيير الحرارة\n/ai_style تغيير الأسلوب\n/ai_diag فحص الذكاء\n"
         "/ei_on تشغيل التعاطف\n/ei_off إيقاف التعاطف"
     )
@@ -438,7 +437,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.get("sessions", {}).pop("iq", None); context.user_data["streak"] = 0
         await update.message.reply_text("سيبدأ اختبار الذكاء (حتى ٣٠٠).")
         await send_next(update, context, "iq", "أسئلة الذكاء"); return
-    if "اسأل قياس" in t:
+    if "اسأل محمد مشرف" in t:  # ← تم التبديل هنا
         await update.message.reply_text("اكتب سؤالك بعد الأمر:\n/ask_ai كيف أستعد لاختبار القدرات؟"); return
     ok, a, b = parse_mul_expr(t)
     if ok:
